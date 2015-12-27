@@ -4,7 +4,6 @@
 //
 
 #include "lexical_parser.h"
-#include "parser.h"
 
 #include <string.h>
 
@@ -48,6 +47,15 @@ gboolean match_not_char2(gchar **input_p, gchar char0, gchar char1) {
     }
 }
 
+gboolean match_chars(gchar **input_p, gchar *chars) {
+    for (gchar *char_p = chars; *char_p; ++char_p) {
+        if (match_char(input_p, *char_p)) {
+            return TRUE;
+        }
+    }
+    return FALSE;
+}
+
 gboolean text_is_first(gchar *input, gchar *text) {
     return g_str_has_prefix(input, text);
 }
@@ -70,7 +78,7 @@ gboolean match_text(gchar **input_p, gchar *text) {
         char *input_old = *(input_p); \
         if ((match)) { \
             return token_new_strndup_no_data((token_id), input_old, \
-                                             *(input_p) - input_old); \
+                                             *(input_p)); \
         } \
     }
 
@@ -308,7 +316,7 @@ token_t *multi_line_comment(gchar **input_p) {
         match_multi_line_comment_chars(input_p);
         if (match_text(input_p, "*/")) {
             return token_new_strndup_no_data(TOKEN_LEXICAL_MULTI_LINE_COMMENT,
-                                             input_old, *(input_p) - input_old);
+                                             input_old, *input_p);
         }
     }
 
@@ -320,10 +328,9 @@ gboolean single_line_comment_is_first(gchar *input) {
     return g_str_has_prefix(input, "//");
 }
 
-static gboolean match_single_line_comment_chars(gchar **input_p) {
+static gboolean match_single_line_comment_char(gchar **input_p) {
     if (!line_terminator_is_first(*input_p)) {
         consume_char(input_p);
-        match_single_line_comment_chars(input_p);
         return TRUE;
     } else {
         return FALSE;
@@ -332,9 +339,7 @@ static gboolean match_single_line_comment_chars(gchar **input_p) {
 
 /*
  * SingleLineComment ::
- *     // SingleLineCommentChars(opt)
- * SingleLineCommentChars ::
- *     SingleLineCommentChar SingleLineCommentChars(opt)
+ *     // SingleLineCommentChar*
  * SingleLineCommentChar ::
  *     SourceCharacter but not LineTerminator
  */
@@ -342,11 +347,11 @@ token_t *single_line_comment(gchar **input_p) {
 
     gchar *input_old = *input_p;
 
-    // // SingleLineCommentChars(opt)
+    // // SingleLineCommentChar*
     if (match_text(input_p, "//")) {
-        match_single_line_comment_chars(input_p);
+        while (match_single_line_comment_char(input_p)) {}
         return token_new_strndup_no_data(TOKEN_LEXICAL_SINGLE_LINE_COMMENT,
-                                         input_old, *(input_p) - input_old);
+                                         input_old, *input_p);
     }
 
     // TODO: Error!
@@ -579,18 +584,108 @@ token_t *identifier_name(gchar **input_p) {
 
     // IdentifierStart IdentifierPart*
     if (match_identifier_start(input_p)) {
-        while (match_identifier_part(input_p));
+        while (match_identifier_part(input_p)) {}
         return token_new_strndup_no_data(TOKEN_LEXICAL_IDENTIFIER_NAME,
-                                         input_old, *(input_p) - input_old);
+                                         input_old, *input_p);
     }
 
     // TODO: Error!
     return NULL;
 }
 
-gboolean match_unicode_escape_sequence(gchar **input_p) {
-    // TODO
+static char *PUNCTUATORS[] = {
+        "{",
+        "}",
+        "(",
+        ")",
+        "[",
+        "]",
+        ".",
+        ";",
+        ",",
+        "<",
+        ">",
+        "<=",
+        ">=",
+        "==",
+        "!=",
+        "===",
+        "!==",
+        "",
+        "+",
+        "-",
+        "*",
+        "%",
+        "++",
+        "--",
+        "<<",
+        ">>",
+        ">>>",
+        "&",
+        "|",
+        "^",
+        "!",
+        "~",
+        "&&",
+        "||",
+        "?",
+        ":",
+        "=",
+        "+=",
+        "-=",
+        "*=",
+        "%=",
+        "<<=",
+        ">>=",
+        ">>>=",
+        "&=",
+        "|=",
+        "^="
+};
+
+gboolean punctuator_is_first(gchar *input) {
+    for (gsize i = 0; i < G_N_ELEMENTS(FUTURE_RESERVED_WORDS); ++i) {
+        if (text_is_first(input, FUTURE_RESERVED_WORDS[i])) {
+            return TRUE;
+        }
+    }
     return FALSE;
+}
+
+token_t *punctuator(gchar **input_p) {
+
+    for (gsize i = 0; i < G_N_ELEMENTS(PUNCTUATORS); ++i) {
+        try_match_text_and_return_token(input_p, TOKEN_LEXICAL_PUNCTUATOR,
+                                        PUNCTUATORS[i])
+    }
+
+    // TODO: Error!
+    return NULL;
+}
+
+static char *DIV_PUNCTUATORS[] = {
+        "|=",
+        "^="
+};
+
+gboolean div_punctuator_is_first(gchar *input) {
+    for (gsize i = 0; i < G_N_ELEMENTS(DIV_PUNCTUATORS); ++i) {
+        if (text_is_first(input, DIV_PUNCTUATORS[i])) {
+            return TRUE;
+        }
+    }
+    return FALSE;
+}
+
+token_t *div_punctuator(gchar **input_p) {
+
+    for (gsize i = 0; i < G_N_ELEMENTS(DIV_PUNCTUATORS); ++i) {
+        try_match_text_and_return_token(input_p, TOKEN_LEXICAL_DIV_PUNCTUATOR,
+                                        DIV_PUNCTUATORS[i])
+    }
+
+    // TODO: Error!
+    return NULL;
 }
 
 #define TEXT_NULL "null"
@@ -599,7 +694,7 @@ gboolean match_unicode_escape_sequence(gchar **input_p) {
  * NullLiteral ::
  *     null
  */
-gboolean null_literal(gchar **input_p) {
+token_t *null_literal(gchar **input_p) {
     // TODO
 }
 
@@ -615,10 +710,102 @@ gboolean is_null_literal(gchar *input) {
  *     true
  *     false
  */
-gboolean boolean_literal(gchar **input_p) {
+token_t *boolean_literal(gchar **input_p) {
     // TODO
 }
 
 gboolean is_boolean_literal(gchar *input) {
     return is_text(input, TEXT_TRUE) || is_text(input, TEXT_FALSE);
+}
+
+/*
+ * NumericLiteral ::
+ *     DecimalLiteral
+ *     HexIntegerLiteral
+ */
+token_t *numeric_literal(gchar **input_p) {
+
+    if (hex_integer_is_first(*input_p)) {
+        // TODO: Wrap child
+        return hex_integer_literal(input_p);
+    } else {
+
+    }
+
+    // TODO: Error!
+    return NULL;
+}
+
+/*
+ * DecimalLiteral ::
+ *     DecimalIntegerLiteral . DecimalDigits(opt) ExponentPart(opt)
+ *     . DecimalDigits ExponentPart(opt)
+ *     DecimalIntegerLiteral ExponentPart(opt)
+ * ExponentPart ::
+ *     ExponentIndicator SignedInteger
+ * ExponentIndicator :: one of
+ *     e E
+ * SignedInteger ::
+ *     DecimalDigits
+ *     + DecimalDigits
+ *     - DecimalDigits
+ */
+token_t *decimal_literal(gchar **input_p) {
+
+}
+
+/*
+ * DecimalIntegerLiteral ::
+ *     0
+ *     NonZeroDigit DecimalDigit*
+ * DecimalDigit :: one of
+ *     0 1 2 3 4 5 6 7 8 9
+ * NonZeroDigit :: one of
+ *     1 2 3 4 5 6 7 8 9
+ */
+token_t *decimal_integer_literal(gchar **input_p) {
+
+}
+
+gboolean hex_integer_is_first(gchar *input) {
+    return text_is_first(input, "0x") || text_is_first(input, "0X");
+}
+
+#define HEX_DIGITS "0123456789abcdefABCDEF"
+
+gboolean match_hex_digit(gchar **input_p) {
+    return match_chars(input_p, HEX_DIGITS);
+}
+
+/*
+ * HexIntegerLiteral ::
+ *     0x HexDigit+
+ *     0X HexDigit+
+ * HexDigit :: one of
+ *     0 1 2 3 4 5 6 7 8 9 a b c d e f A B C D E F
+ */
+token_t *hex_integer_literal(gchar **input_p) {
+
+    gchar *input_old = *input_p;
+    if (match_text(input_p, "0x") || match_text(input_p, "0X")) {
+        gchar *input_digit_start = *input_p;
+        if (match_hex_digit(input_p)) {
+            while (match_hex_digit(input_p)) {}
+            gchar *digits = g_strndup(input_digit_start,
+                                      *input_p - input_digit_start);
+            gint64 *value_p = g_new(gint64, 1);
+            *value_p = g_ascii_strtoll(digits, NULL, 16);
+            g_free(digits);
+            return token_new_strndup(TOKEN_LEXICAL_HEX_INTEGER_LITERAL,
+                                     input_old, *input_p, value_p, NULL);
+        }
+    }
+
+    // TODO: Error!
+    return NULL;
+}
+
+gboolean match_unicode_escape_sequence(gchar **input_p) {
+    // TODO
+    return FALSE;
 }

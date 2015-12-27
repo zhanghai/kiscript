@@ -36,14 +36,32 @@ token_t *identifier(gchar **input_p);
 
 token_t *identifier_name(gchar **input_p);
 
-gboolean match_unicode_escape_sequence(gchar **input_p);
+gboolean punctuator_is_first(gchar *input);
 
-gboolean null_literal(gchar **input_p);
+token_t *punctuator(gchar **input_p);
+
+gboolean div_punctuator_is_first(gchar *input);
+
+token_t *div_punctuator(gchar **input_p);
+
+token_t *null_literal(gchar **input_p);
 
 gboolean is_null_literal(gchar *input);
 
-gboolean boolean_literal(gchar **input_p);
+token_t *boolean_literal(gchar **input_p);
 
 gboolean is_boolean_literal(gchar *input);
+
+token_t *numeric_literal(gchar **input_p);
+
+token_t *decimal_literal(gchar **input_p);
+
+token_t *decimal_integer_literal(gchar **input_p);
+
+gboolean hex_integer_is_first(gchar *input);
+
+token_t *hex_integer_literal(gchar **input_p);
+
+gboolean match_unicode_escape_sequence(gchar **input_p);
 
 #endif //KISCRIPT_LEXICAL_PARSER_H

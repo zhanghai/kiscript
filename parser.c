@@ -20,15 +20,20 @@ token_t *token_new(token_id_t id, gchar *text, gpointer data,
     return token;
 }
 
+token_t *token_new_strndup(token_id_t id, gchar *text, gchar *text_end,
+                           gpointer data,
+                           token_data_free_func_t data_free_func) {
+    return token_new(id, g_strndup(text, text_end - text), data,
+                     data_free_func);
+}
+
 token_t *token_new_no_data(token_id_t id, gchar *text) {
-    token_t *token = g_new(token_t, 1);
-    token_init(token, id, text, NULL, NULL);
-    return token;
+    return token_new(id, text, NULL, NULL);
 }
 
 token_t *token_new_strndup_no_data(token_id_t id, gchar *text,
-                                   gsize text_length) {
-    return token_new_no_data(id, g_strndup(text, text_length));
+                                   gchar *text_end) {
+    return token_new_no_data(id, g_strndup(text, text_end - text));
 }
 
 void token_final(token_t *token) {
