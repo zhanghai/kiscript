@@ -8,17 +8,34 @@
 
 #include "parser.h"
 
-void token_init(token_t *token, token_id_t id, gchar *text);
+token_t * input_element_div(gchar **input_p);
 
-token_t * token_new(token_id_t id, gchar *text);
+token_t * white_space(gchar **input_p);
 
-token_t * token_new_no_data(token_id_t id, gchar *text);
+gboolean line_terminator_is_first(gchar *input);
 
-token_t * token_new_strndup_no_data(token_id_t id, gchar *text,
-                                    gsize text_length);
+token_t *line_terminator(gchar **input_p);
 
-void token_final(token_t *token);
+token_t *line_terminator_sequence(gchar **input_p);
 
-void token_free(token_t *token);
+gboolean comment_is_first(gchar *input);
+
+token_t *comment(gchar **input_p);
+
+gboolean multi_line_comment_is_first(gchar *input);
+
+token_t *multi_line_comment(gchar **input_p);
+
+gboolean single_line_comment_is_first(gchar *input);
+
+token_t *single_line_comment(gchar **input_p);
+
+token_t *token(gchar **input_p);
+
+token_t *identifier(gchar **input_p);
+
+token_t *identifier_name(gchar **input_p);
+
+gboolean match_unicode_escape_sequence(gchar **input_p);
 
 #endif //KISCRIPT_LEXICAL_PARSER_H
