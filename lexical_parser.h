@@ -38,4 +38,12 @@ token_t *identifier_name(gchar **input_p);
 
 gboolean match_unicode_escape_sequence(gchar **input_p);
 
+gboolean null_literal(gchar **input_p);
+
+gboolean is_null_literal(gchar *input);
+
+gboolean boolean_literal(gchar **input_p);
+
+gboolean is_boolean_literal(gchar *input);
+
 #endif //KISCRIPT_LEXICAL_PARSER_H

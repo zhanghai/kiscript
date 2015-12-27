@@ -4,8 +4,13 @@
 //
 
 #include "lexical_parser.h"
+#include "parser.h"
 
 #include <string.h>
+
+gboolean is_text(gchar *input, gchar *text) {
+    return g_strcmp0(input, text) == 0;
+}
 
 gboolean char_is_first(gchar *input, gchar char0) {
     return input[0] == char0;
@@ -165,13 +170,17 @@ gboolean line_terminator_is_first(gchar *input) {
 token_t *line_terminator(gchar **input_p) {
 
     // <LF>
-    try_match_char_and_return_token(input_p, TOKEN_LEXICAL_LINE_TERMINATOR, CHARACTER_LF_CHAR)
+    try_match_char_and_return_token(input_p, TOKEN_LEXICAL_LINE_TERMINATOR,
+                                    CHARACTER_LF_CHAR)
     // <CR>
-    try_match_char_and_return_token(input_p, TOKEN_LEXICAL_LINE_TERMINATOR, CHARACTER_CR_CHAR)
+    try_match_char_and_return_token(input_p, TOKEN_LEXICAL_LINE_TERMINATOR,
+                                    CHARACTER_CR_CHAR)
     // <LS>
-    try_match_text_and_return_token(input_p, TOKEN_LEXICAL_LINE_TERMINATOR, CHARACTER_LS_TEXT)
+    try_match_text_and_return_token(input_p, TOKEN_LEXICAL_LINE_TERMINATOR,
+                                    CHARACTER_LS_TEXT)
     // <PS>
-    try_match_text_and_return_token(input_p, TOKEN_LEXICAL_LINE_TERMINATOR, CHARACTER_PS_TEXT)
+    try_match_text_and_return_token(input_p, TOKEN_LEXICAL_LINE_TERMINATOR,
+                                    CHARACTER_PS_TEXT)
 
     // TODO: Error!
     return NULL;
@@ -188,16 +197,26 @@ token_t *line_terminator(gchar **input_p) {
 token_t *line_terminator_sequence(gchar **input_p) {
 
     // <LF>
-    try_match_char_and_return_token(input_p, TOKEN_LEXICAL_LINE_TERMINATOR_SEQUENCE, CHARACTER_LF_CHAR)
+    try_match_char_and_return_token(input_p,
+                                    TOKEN_LEXICAL_LINE_TERMINATOR_SEQUENCE,
+                                    CHARACTER_LF_CHAR)
     // <CR> <LF>
     // NOTE: Promoted over <CR> for the lookahead of <CR>.
-    try_match_text_and_return_token(input_p, TOKEN_LEXICAL_LINE_TERMINATOR_SEQUENCE, TEXT_CR_LF)
+    try_match_text_and_return_token(input_p,
+                                    TOKEN_LEXICAL_LINE_TERMINATOR_SEQUENCE,
+                                    TEXT_CR_LF)
     // <CR>
-    try_match_char_and_return_token(input_p, TOKEN_LEXICAL_LINE_TERMINATOR_SEQUENCE, CHARACTER_CR_CHAR)
+    try_match_char_and_return_token(input_p,
+                                    TOKEN_LEXICAL_LINE_TERMINATOR_SEQUENCE,
+                                    CHARACTER_CR_CHAR)
     // <LS>
-    try_match_text_and_return_token(input_p, TOKEN_LEXICAL_LINE_TERMINATOR_SEQUENCE, CHARACTER_LS_TEXT)
+    try_match_text_and_return_token(input_p,
+                                    TOKEN_LEXICAL_LINE_TERMINATOR_SEQUENCE,
+                                    CHARACTER_LS_TEXT)
     // <PS>
-    try_match_text_and_return_token(input_p, TOKEN_LEXICAL_LINE_TERMINATOR_SEQUENCE, CHARACTER_PS_TEXT)
+    try_match_text_and_return_token(input_p,
+                                    TOKEN_LEXICAL_LINE_TERMINATOR_SEQUENCE,
+                                    CHARACTER_PS_TEXT)
 
     // TODO: Error!
     return NULL;
@@ -268,7 +287,7 @@ static gboolean match_post_asterisk_comment_chars(gchar **input_p) {
 
 /*
  * MultiLineComment ::
- *     /* MultiLineCommentChars(opt) */                                         /*
+ *     /* MultiLineCommentChars(opt) */                                       /*
  * MultiLineCommentChars ::
  *     MultiLineNotAsteriskChar MultiLineCommentChars(opt)
  *     * PostAsteriskCommentChars(opt)
@@ -349,13 +368,89 @@ token_t *token(gchar **input_p) {
     return NULL;
 }
 
+static char *KEYWORDS[] = {
+        "break",
+        "do",
+        "instanceof",
+        "typeof",
+        "case",
+        "else",
+        "new",
+        "var",
+        "catch",
+        "finally",
+        "return",
+        "void",
+        "continue",
+        "for",
+        "switch",
+        "while",
+        "debugger",
+        "function",
+        "this",
+        "with",
+        "default",
+        "if",
+        "throw",
+        "delete",
+        "in",
+        "try"
+};
+
+static gboolean is_keyword(gchar *input) {
+    for (gsize i = 0; i < G_N_ELEMENTS(KEYWORDS); ++i) {
+        if (is_text(input, KEYWORDS[i])) {
+            return TRUE;
+        }
+    }
+    return FALSE;
+}
+
+static char *FUTURE_RESERVED_WORDS[] = {
+        "class",
+        "enum",
+        "extends",
+        "super",
+        "const",
+        "export",
+        "import",
+        // Strict mode
+        "implements",
+        "let",
+        "private",
+        "public",
+        "yield",
+        "interface",
+        "package",
+        "protected",
+        "static"
+};
+
+static gboolean is_future_reserved_word(gchar *input) {
+    for (gsize i = 0; i < G_N_ELEMENTS(FUTURE_RESERVED_WORDS); ++i) {
+        if (is_text(input, FUTURE_RESERVED_WORDS[i])) {
+            return TRUE;
+        }
+    }
+    return FALSE;
+}
+
+static gboolean is_reserved_word(gchar *input) {
+    return is_keyword(input) || is_future_reserved_word(input)
+           || is_null_literal(input) || is_boolean_literal(input);
+}
+
 /*
  * Identifier ::
  *     IdentifierName but not ReservedWord
  */
 token_t *identifier(gchar **input_p) {
 
-    // TODO
+    token_t *identifier_name_token = identifier_name(input_p);
+    if (!is_reserved_word(identifier_name_token->text)) {
+        // TODO: Wrap child.
+        return identifier_name_token;
+    }
 
     // TODO: Error!
     return NULL;
@@ -398,11 +493,11 @@ static gboolean match_identifier_start(gchar **input_p) {
     } else {
         // \ UnicodeEscapeSequence
         gchar *input_old = *input_p;
-        // LOOKAHEAD!
         if (match_char(input_p, '\\')
             && match_unicode_escape_sequence(input_p)) {
             return TRUE;
         } else {
+            // BACKTRACK!
             *input_p = input_old;
             return FALSE;
         }
@@ -496,4 +591,34 @@ token_t *identifier_name(gchar **input_p) {
 gboolean match_unicode_escape_sequence(gchar **input_p) {
     // TODO
     return FALSE;
+}
+
+#define TEXT_NULL "null"
+
+/*
+ * NullLiteral ::
+ *     null
+ */
+gboolean null_literal(gchar **input_p) {
+    // TODO
+}
+
+gboolean is_null_literal(gchar *input) {
+    return is_text(input, TEXT_NULL);
+}
+
+#define TEXT_TRUE "true"
+#define TEXT_FALSE "false"
+
+/*
+ * BooleanLiteral ::
+ *     true
+ *     false
+ */
+gboolean boolean_literal(gchar **input_p) {
+    // TODO
+}
+
+gboolean is_boolean_literal(gchar *input) {
+    return is_text(input, TEXT_TRUE) || is_text(input, TEXT_FALSE);
 }
