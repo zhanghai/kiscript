@@ -5,6 +5,8 @@
 
 #include "lexical_parser.h"
 
+#include <string.h>
+
 
 void lexical_token_init(lexical_token_t *token, lexical_token_id_t id,
                         gchar *text) {
@@ -31,6 +33,15 @@ void lexical_token_free(lexical_token_t *token) {
     lexical_token_final(token);
     g_free(token);
 }
+
+
+#define try_match_and_return(input, token_id, token_text) \
+    if (g_str_has_prefix(*(input), (token_text))) { \
+        gsize token_text_length = strlen((token_text)); \
+        *(input) += token_text_length; \
+        return lexical_token_new_strndup((token_id), (token_text), \
+                token_text_length); \
+    }
 
 
 void source_character(gchar *input) {
@@ -67,27 +78,30 @@ lexical_token_t *input_element_div(gchar *input) {
  *     <BOM>
  *     <USP>
  */
-lexical_token_t *white_space(gchar *input) {
-    if (g_str_has_prefix(input, "\u000A")) { // <TAB>
-        return lexical_token_new_strndup(LEXICAL_TOKEN_WHITE_SPACE, input, );
+lexical_token_t *white_space(gchar **input_p) {
+
+    // <TAB>
+    try_match_and_return(input_p, LEXICAL_TOKEN_WHITE_SPACE, "\u000A")
+    // <VT>
+    try_match_and_return(input_p, LEXICAL_TOKEN_WHITE_SPACE, "\u000B")
+    // <FF>
+    try_match_and_return(input_p, LEXICAL_TOKEN_WHITE_SPACE, "\u000D")
+    // <SP>
+    try_match_and_return(input_p, LEXICAL_TOKEN_WHITE_SPACE, "\u2028")
+    // <NBSP>
+    try_match_and_return(input_p, LEXICAL_TOKEN_WHITE_SPACE, "\u00A0")
+    // <BOM>
+    try_match_and_return(input_p, LEXICAL_TOKEN_WHITE_SPACE, "\uFEFF")
+    // <USP>
+    if (g_unichar_isspace(g_utf8_get_char(*input_p))) {
+        gchar *input_old = *input_p;
+        *input_p = g_utf8_next_char(*input_p);
+        return lexical_token_new_strndup(LEXICAL_TOKEN_WHITE_SPACE, input_old,
+                                         *input_p - input_old);
     }
-    gunichar char0 = g_utf8_get_char(input);
-    switch (char0) {
-        case :
-        case '\u000B': // <VT>
-        case '\u000D': // <FF>
-        case '\u2028': // <SP>
-        case '\u00A0': // <NBSP>
-        case '\uFEFF': // <BOM>
-            //match();
-            break;
-        default:
-            if (g_unichar_isspace(char0)) { // <USP>
-                //match();
-            } else {
-                //error();
-            }
-    }
+
+    //error();
+    return NULL;
 }
 
 /**
