@@ -44,12 +44,11 @@ void lexical_token_free(lexical_token_t *token) {
     }
 
 
-void source_character(gchar *input) {
-    if (g_utf8_validate(input)) {
-        //match();
-    } else {
-        //error();
-    }
+void normalize_input(gchar **input_p) {
+
+    *input_p = g_utf8_normalize(*input_p, -1, G_NORMALIZE_DEFAULT);
+
+    // TODO: Error!
 }
 
 /**
@@ -60,7 +59,7 @@ void source_character(gchar *input) {
  *     Token
  *     DivPunctuator
  */
-lexical_token_t *input_element_div(gchar *input) {
+lexical_token_t *input_element_div(gchar **input_p) {
     white_space(input);
     line_terminator(input);
     comment(input);
@@ -81,13 +80,13 @@ lexical_token_t *input_element_div(gchar *input) {
 lexical_token_t *white_space(gchar **input_p) {
 
     // <TAB>
-    try_match_and_return(input_p, LEXICAL_TOKEN_WHITE_SPACE, "\u000A")
+    try_match_and_return(input_p, LEXICAL_TOKEN_WHITE_SPACE, "\u0009")
     // <VT>
     try_match_and_return(input_p, LEXICAL_TOKEN_WHITE_SPACE, "\u000B")
     // <FF>
-    try_match_and_return(input_p, LEXICAL_TOKEN_WHITE_SPACE, "\u000D")
+    try_match_and_return(input_p, LEXICAL_TOKEN_WHITE_SPACE, "\u000C")
     // <SP>
-    try_match_and_return(input_p, LEXICAL_TOKEN_WHITE_SPACE, "\u2028")
+    try_match_and_return(input_p, LEXICAL_TOKEN_WHITE_SPACE, "\u0020")
     // <NBSP>
     try_match_and_return(input_p, LEXICAL_TOKEN_WHITE_SPACE, "\u00A0")
     // <BOM>
@@ -100,7 +99,7 @@ lexical_token_t *white_space(gchar **input_p) {
                                          *input_p - input_old);
     }
 
-    //error();
+    // TODO: Error!
     return NULL;
 }
 
@@ -111,17 +110,19 @@ lexical_token_t *white_space(gchar **input_p) {
  *     <LS>
  *     <PS>
  */
-void line_terminator(gchar *input) {
-    switch (input[0]) {
-        case '\u000A': // <LF>
-        case '\u000D': // <CR>
-        case '\u2028': // <LS>
-        case '\u2029': // <PS>
-            //match()
-            break;
-        default:
-            //error()
-    }
+lexical_token_t *line_terminator(gchar **input_p) {
+
+    // <LF>
+    try_match_and_return(input_p, LEXICAL_TOKEN_LINE_TERMINATOR, "\u000A")
+    // <CR>
+    try_match_and_return(input_p, LEXICAL_TOKEN_LINE_TERMINATOR, "\u000D")
+    // <LS>
+    try_match_and_return(input_p, LEXICAL_TOKEN_LINE_TERMINATOR, "\u2028")
+    // <PS>
+    try_match_and_return(input_p, LEXICAL_TOKEN_LINE_TERMINATOR, "\u2029")
+
+    // TODO: Error!
+    return NULL;
 }
 
 /**
@@ -132,15 +133,20 @@ void line_terminator(gchar *input) {
  *     <PS>
  *     <CR> <LF>
  */
-void line_terminator_sequence(gchar *input) {
-    switch (input[0]) {
-        case '\u000A': // <LF>
-        case '\u000D': // <CR>
-        case '\u2028': // <LS>
-        case '\u2029': // <PS>
-            //match()
-            break;
-        default:
-            //error()
-    }
+lexical_token_t *line_terminator_sequence(gchar **input_p) {
+
+    // <LF>
+    try_match_and_return(input_p, LEXICAL_TOKEN_LINE_TERMINATOR, "\u000A")
+    // <CR> <LF>
+    // NOTE: Promoted over <CR> for the lookahead of <CR>.
+    try_match_and_return(input_p, LEXICAL_TOKEN_LINE_TERMINATOR, "\u000D\u000A")
+    // <CR>
+    try_match_and_return(input_p, LEXICAL_TOKEN_LINE_TERMINATOR, "\u000D")
+    // <LS>
+    try_match_and_return(input_p, LEXICAL_TOKEN_LINE_TERMINATOR, "\u2028")
+    // <PS>
+    try_match_and_return(input_p, LEXICAL_TOKEN_LINE_TERMINATOR, "\u2029")
+
+    // TODO: Error!
+    return NULL;
 }
