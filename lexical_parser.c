@@ -7,7 +7,7 @@
 
 #include <string.h>
 
-gboolean is_text(gchar *input, gchar *text) {
+gboolean text_is_match(gchar *input, gchar *text) {
     return g_strcmp0(input, text) == 0;
 }
 
@@ -402,9 +402,9 @@ static char *KEYWORDS[] = {
         "try"
 };
 
-static gboolean is_keyword(gchar *input) {
+static gboolean keyword_is_match(gchar *input) {
     for (gsize i = 0; i < G_N_ELEMENTS(KEYWORDS); ++i) {
-        if (is_text(input, KEYWORDS[i])) {
+        if (text_is_match(input, KEYWORDS[i])) {
             return TRUE;
         }
     }
@@ -431,18 +431,18 @@ static char *FUTURE_RESERVED_WORDS[] = {
         "static"
 };
 
-static gboolean is_future_reserved_word(gchar *input) {
+static gboolean future_reserved_word_is_match(gchar *input) {
     for (gsize i = 0; i < G_N_ELEMENTS(FUTURE_RESERVED_WORDS); ++i) {
-        if (is_text(input, FUTURE_RESERVED_WORDS[i])) {
+        if (text_is_match(input, FUTURE_RESERVED_WORDS[i])) {
             return TRUE;
         }
     }
     return FALSE;
 }
 
-static gboolean is_reserved_word(gchar *input) {
-    return is_keyword(input) || is_future_reserved_word(input)
-           || is_null_literal(input) || is_boolean_literal(input);
+static gboolean reserved_word_is_match(gchar *input) {
+    return keyword_is_match(input) || future_reserved_word_is_match(input)
+           || null_literal_is_match(input) || boolean_literal_is_match(input);
 }
 
 /*
@@ -452,7 +452,7 @@ static gboolean is_reserved_word(gchar *input) {
 token_t *identifier(gchar **input_p) {
 
     token_t *identifier_name_token = identifier_name(input_p);
-    if (!is_reserved_word(identifier_name_token->text)) {
+    if (!reserved_word_is_match(identifier_name_token->text)) {
         // TODO: Wrap child.
         return identifier_name_token;
     }
@@ -698,8 +698,8 @@ token_t *null_literal(gchar **input_p) {
     // TODO
 }
 
-gboolean is_null_literal(gchar *input) {
-    return is_text(input, TEXT_NULL);
+gboolean null_literal_is_match(gchar *input) {
+    return text_is_match(input, TEXT_NULL);
 }
 
 #define TEXT_TRUE "true"
@@ -714,8 +714,8 @@ token_t *boolean_literal(gchar **input_p) {
     // TODO
 }
 
-gboolean is_boolean_literal(gchar *input) {
-    return is_text(input, TEXT_TRUE) || is_text(input, TEXT_FALSE);
+gboolean boolean_literal_is_match(gchar *input) {
+    return text_is_match(input, TEXT_TRUE) || text_is_match(input, TEXT_FALSE);
 }
 
 /*

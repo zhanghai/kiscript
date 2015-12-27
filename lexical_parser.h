@@ -46,11 +46,11 @@ token_t *div_punctuator(gchar **input_p);
 
 token_t *null_literal(gchar **input_p);
 
-gboolean is_null_literal(gchar *input);
+gboolean null_literal_is_match(gchar *input);
 
 token_t *boolean_literal(gchar **input_p);
 
-gboolean is_boolean_literal(gchar *input);
+gboolean boolean_literal_is_match(gchar *input);
 
 token_t *numeric_literal(gchar **input_p);
 
