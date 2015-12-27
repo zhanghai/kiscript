@@ -6,18 +6,19 @@
 #ifndef KISCRIPT_LEXICAL_PARSER_H
 #define KISCRIPT_LEXICAL_PARSER_H
 
-#include <glib.h>
+#include "parser.h"
 
-typedef enum {
-    LEXICAL_TOKEN_INPUT_ELEMENT_DIV,
-    LEXICAL_TOKEN_WHITE_SPACE,
-    LEXICAL_TOKEN_LINE_TERMINATOR,
-    LEXICAL_TOKEN_LINE_TERMINATOR_SEQUENCE
-} lexical_token_id_t;
+void token_init(token_t *token, token_id_t id, gchar *text);
 
-typedef struct {
-    lexical_token_id_t id;
-    gchar *text;
-} lexical_token_t;
+token_t * token_new(token_id_t id, gchar *text);
+
+token_t * token_new_no_data(token_id_t id, gchar *text);
+
+token_t * token_new_strndup_no_data(token_id_t id, gchar *text,
+                                    gsize text_length);
+
+void token_final(token_t *token);
+
+void token_free(token_t *token);
 
 #endif //KISCRIPT_LEXICAL_PARSER_H

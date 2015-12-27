@@ -1,0 +1,48 @@
+//
+// Copyright (c) 2015 Zhang Hai <Dreaming.in.Code.ZH@Gmail.com>
+// All Rights Reserved.
+//
+
+#include "parser.h"
+
+void token_init(token_t *token, token_id_t id, gchar *text, gpointer data,
+                token_data_free_func_t data_free) {
+    token->id = id;
+    token->text = text;
+    token->data = data;
+    token->data_free = data_free;
+}
+
+token_t *token_new(token_id_t id, gchar *text, gpointer data,
+                   token_data_free_func_t data_free) {
+    token_t *token = g_new(token_t, 1);
+    token_init(token, id, text, data, data_free);
+    return token;
+}
+
+token_t *token_new_no_data(token_id_t id, gchar *text) {
+    token_t *token = g_new(token_t, 1);
+    token_init(token, id, text, NULL, NULL);
+    return token;
+}
+
+token_t *token_new_strndup_no_data(token_id_t id, gchar *text,
+                                   gsize text_length) {
+    return token_new_no_data(id, g_strndup(text, text_length));
+}
+
+void token_final(token_t *token) {
+    g_free(token->text);
+    if (token->data != NULL) {
+        if (token->data_free != NULL) {
+            token->data_free(token->data);
+        } else {
+            g_free(token->data);
+        }
+    }
+}
+
+void token_free(token_t *token) {
+    token_final(token);
+    g_free(token);
+}
