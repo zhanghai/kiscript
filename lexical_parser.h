@@ -70,6 +70,6 @@ gboolean hex_integer_is_first(gchar *input);
 
 token_t *hex_integer_literal(gchar **input_p);
 
-gboolean match_unicode_escape_sequence(gchar **input_p);
+gboolean unicode_escape_sequence_match(gchar **input_p);
 
 #endif //KISCRIPT_LEXICAL_PARSER_H

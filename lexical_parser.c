@@ -15,41 +15,41 @@ gboolean char_is_first(gchar *input, gchar char0) {
     return input[0] == char0;
 }
 
-void consume_char(gchar **input_p) {
+void char_consume(gchar **input_p) {
     // Always use g_utf8_next_char for safety.
     *input_p = g_utf8_next_char(*input_p);
 }
 
-gboolean match_char(gchar **input_p, gchar char0) {
+gboolean char_match(gchar **input_p, gchar char0) {
     if (char_is_first(*input_p, char0)) {
-        consume_char(input_p);
+        char_consume(input_p);
         return TRUE;
     } else {
         return FALSE;
     }
 }
 
-gboolean match_not_char(gchar **input_p, gchar char0) {
+gboolean char_match_not(gchar **input_p, gchar char0) {
     if (!char_is_first(*input_p, char0)) {
-        consume_char(input_p);
+        char_consume(input_p);
         return TRUE;
     } else {
         return FALSE;
     }
 }
 
-gboolean match_not_char2(gchar **input_p, gchar char0, gchar char1) {
+gboolean char2_match_not2(gchar **input_p, gchar char0, gchar char1) {
     if (!char_is_first(*input_p, char0) && !char_is_first(*input_p, char1)) {
-        consume_char(input_p);
+        char_consume(input_p);
         return TRUE;
     } else {
         return FALSE;
     }
 }
 
-gboolean match_chars(gchar **input_p, gchar *chars) {
+gboolean chars_match(gchar **input_p, gchar *chars) {
     for (gchar *char_p = chars; *char_p; ++char_p) {
-        if (match_char(input_p, *char_p)) {
+        if (char_match(input_p, *char_p)) {
             return TRUE;
         }
     }
@@ -60,13 +60,13 @@ gboolean text_is_first(gchar *input, gchar *text) {
     return g_str_has_prefix(input, text);
 }
 
-void consume_text(gchar **input_p, gchar *text) {
+void text_consume(gchar **input_p, gchar *text) {
     *input_p += strlen(text);
 }
 
-gboolean match_text(gchar **input_p, gchar *text) {
+gboolean text_match(gchar **input_p, gchar *text) {
     if (text_is_first(*input_p, text)) {
-        consume_text(input_p, text);
+        text_consume(input_p, text);
         return TRUE;
     } else {
         return FALSE;
@@ -84,11 +84,11 @@ gboolean match_text(gchar **input_p, gchar *text) {
 
 #define try_match_char_and_return_token(input_p, token_id, token_char) \
     try_match_and_return_token((input_p), (token_id), \
-                               match_char((input_p), (token_char)))
+                               char_match((input_p), (token_char)))
 
 #define try_match_text_and_return_token(input_p, token_id, token_text) \
     try_match_and_return_token((input_p), (token_id), \
-                               match_text((input_p), (token_text)))
+                               text_match((input_p), (token_text)))
 
 
 /*
@@ -107,7 +107,7 @@ token_t *input_element_div(gchar **input_p) {
     div_punctuator(input_p);
 }
 
-static gboolean match_usp(gchar **input_p) {
+static gboolean usp_match(gchar **input_p) {
     if (g_unichar_isspace(g_utf8_get_char(*input_p))) {
         *input_p = g_utf8_next_char(*input_p);
         return TRUE;
@@ -149,7 +149,8 @@ token_t *white_space(gchar **input_p) {
     // <BOM>
     try_match_text_and_return_token(input_p, TOKEN_LEXICAL_WHITE_SPACE, "\uFEFF")
     // <USP>
-    try_match_and_return_token(input_p, TOKEN_LEXICAL_WHITE_SPACE, match_usp(input_p))
+    try_match_and_return_token(input_p, TOKEN_LEXICAL_WHITE_SPACE,
+                               usp_match(input_p))
 
     // TODO: Error!
     return NULL;
@@ -261,33 +262,33 @@ gboolean multi_line_comment_is_first(gchar *input) {
     return g_str_has_prefix(input, "/*");
 }
 
-static gboolean match_post_asterisk_comment_chars(gchar **input_p);
+static gboolean post_asterisk_comment_chars_match(gchar **input_p);
 
-static gboolean match_multi_line_comment_chars(gchar **input_p) {
-    if (match_not_char(input_p, '*')) {
+static gboolean multi_line_comment_chars_match(gchar **input_p) {
+    if (char_match_not(input_p, '*')) {
         // MultiLineNotAsteriskChar MultiLineCommentChars(opt)
-        match_multi_line_comment_chars(input_p);
+        multi_line_comment_chars_match(input_p);
         return TRUE;
     // LOOKAHEAD!
     } else if (!text_is_first(*input_p, "*/")) {
         // * PostAsteriskCommentChars(opt)
-        consume_char(input_p);
-        match_post_asterisk_comment_chars(input_p);
+        char_consume(input_p);
+        post_asterisk_comment_chars_match(input_p);
         return TRUE;
     }
     return FALSE;
 }
 
-static gboolean match_post_asterisk_comment_chars(gchar **input_p) {
-    if (match_not_char2(input_p, '/', '*')) {
+static gboolean post_asterisk_comment_chars_match(gchar **input_p) {
+    if (char2_match_not2(input_p, '/', '*')) {
         // MultiLineNotForwardSlashOrAsteriskChar MultiLineCommentChars(opt)
-        match_multi_line_comment_chars(input_p);
+        multi_line_comment_chars_match(input_p);
         return TRUE;
     // LOOKAHEAD!
     } else if (!text_is_first(*input_p, "*/")) {
         // * PostAsteriskCommentChars(opt)
-        consume_char(input_p);
-        match_post_asterisk_comment_chars(input_p);
+        char_consume(input_p);
+        post_asterisk_comment_chars_match(input_p);
         return TRUE;
     }
     return FALSE;
@@ -312,9 +313,9 @@ token_t *multi_line_comment(gchar **input_p) {
     gchar *input_old = *input_p;
 
     // /* MultiLineCommentChars(opt) */
-    if (match_text(input_p, "/*")) {
-        match_multi_line_comment_chars(input_p);
-        if (match_text(input_p, "*/")) {
+    if (text_match(input_p, "/*")) {
+        multi_line_comment_chars_match(input_p);
+        if (text_match(input_p, "*/")) {
             return token_new_strndup_no_data(TOKEN_LEXICAL_MULTI_LINE_COMMENT,
                                              input_old, *input_p);
         }
@@ -328,9 +329,9 @@ gboolean single_line_comment_is_first(gchar *input) {
     return g_str_has_prefix(input, "//");
 }
 
-static gboolean match_single_line_comment_char(gchar **input_p) {
+static gboolean single_line_comment_char_match(gchar **input_p) {
     if (!line_terminator_is_first(*input_p)) {
-        consume_char(input_p);
+        char_consume(input_p);
         return TRUE;
     } else {
         return FALSE;
@@ -348,8 +349,8 @@ token_t *single_line_comment(gchar **input_p) {
     gchar *input_old = *input_p;
 
     // // SingleLineCommentChar*
-    if (match_text(input_p, "//")) {
-        while (match_single_line_comment_char(input_p)) {}
+    if (text_match(input_p, "//")) {
+        while (single_line_comment_char_match(input_p)) {}
         return token_new_strndup_no_data(TOKEN_LEXICAL_SINGLE_LINE_COMMENT,
                                          input_old, *input_p);
     }
@@ -482,9 +483,9 @@ static gboolean unicode_letter_is_first(gchar *input) {
  *             “Modifier letter (Lm)”, “Other letter (Lo)”, or
  *             “Letter number (Nl)”.
  */
-static gboolean match_unicode_letter(gchar **input_p) {
+static gboolean unicode_letter_match(gchar **input_p) {
     if (unicode_letter_is_first(*input_p)) {
-        consume_char(input_p);
+        char_consume(input_p);
         return TRUE;
     } else {
         return FALSE;
@@ -503,16 +504,16 @@ static gboolean identifier_start_is_first(gchar *input) {
  *     _
  *     \ UnicodeEscapeSequence
  */
-static gboolean match_identifier_start(gchar **input_p) {
-    gboolean matched = match_unicode_letter(input_p) || match_char(input_p, '$')
-                       || match_char(input_p, '_');
+static gboolean identifier_start_match(gchar **input_p) {
+    gboolean matched = unicode_letter_match(input_p) || char_match(input_p, '$')
+                       || char_match(input_p, '_');
     if (matched) {
         return TRUE;
     } else {
         // \ UnicodeEscapeSequence
         gchar *input_old = *input_p;
-        if (match_char(input_p, '\\')
-            && match_unicode_escape_sequence(input_p)) {
+        if (char_match(input_p, '\\')
+            && unicode_escape_sequence_match(input_p)) {
             return TRUE;
         } else {
             // BACKTRACK!
@@ -527,11 +528,11 @@ static gboolean match_identifier_start(gchar **input_p) {
  *     any character in the Unicode categories “Non-spacing mark (Mn)” or
  *     “Combining spacing mark (Mc)”
  */
-static gboolean match_unicode_combining_mark(gchar **input_p) {
+static gboolean unicode_combining_mark_match(gchar **input_p) {
     switch (g_unichar_type(g_utf8_get_char(*input_p))) {
         case G_UNICODE_NON_SPACING_MARK:
         case G_UNICODE_SPACING_MARK:
-            consume_char(input_p);
+            char_consume(input_p);
             return TRUE;
         default:
             return FALSE;
@@ -542,9 +543,9 @@ static gboolean match_unicode_combining_mark(gchar **input_p) {
  * UnicodeDigit ::
  *     any character in the Unicode category “Decimal number (Nd)”
  */
-static gboolean match_unicode_digit(gchar **input_p) {
+static gboolean unicode_digit_match(gchar **input_p) {
     if (g_unichar_type(g_utf8_get_char(*input_p)) == G_UNICODE_DECIMAL_NUMBER) {
-        consume_char(input_p);
+        char_consume(input_p);
         return TRUE;
     } else {
         return FALSE;
@@ -555,10 +556,10 @@ static gboolean match_unicode_digit(gchar **input_p) {
  * UnicodeConnectorPunctuation ::
  *     any character in the Unicode category “Connector punctuation (Pc)”
  */
-static gboolean match_unicode_connector_punctuation(gchar **input_p) {
+static gboolean unicode_connector_punctuation_match(gchar **input_p) {
     if (g_unichar_type(g_utf8_get_char(*input_p)) ==
             G_UNICODE_CONNECT_PUNCTUATION) {
-        consume_char(input_p);
+        char_consume(input_p);
         return TRUE;
     } else {
         return FALSE;
@@ -577,13 +578,13 @@ static gboolean match_unicode_connector_punctuation(gchar **input_p) {
  *     <ZWNJ>
  *     <ZWJ>
  */
-static gboolean match_identifier_part(gchar **input_p) {
-    return match_identifier_start(input_p)
-           || match_unicode_combining_mark(input_p)
-           || match_unicode_digit(input_p)
-           || match_unicode_connector_punctuation(input_p)
-           || match_text(input_p, CHARACTER_ZWNJ_TEXT)
-           || match_text(input_p, CHARACTER_ZWJ_TEXT);
+static gboolean identifier_part_match(gchar **input_p) {
+    return identifier_start_match(input_p)
+           || unicode_combining_mark_match(input_p)
+           || unicode_digit_match(input_p)
+           || unicode_connector_punctuation_match(input_p)
+           || text_match(input_p, CHARACTER_ZWNJ_TEXT)
+           || text_match(input_p, CHARACTER_ZWJ_TEXT);
 }
 
 /*
@@ -596,8 +597,8 @@ token_t *identifier_name(gchar **input_p) {
     gchar *input_old = *input_p;
 
     // IdentifierStart IdentifierPart*
-    if (match_identifier_start(input_p)) {
-        while (match_identifier_part(input_p)) {}
+    if (identifier_start_match(input_p)) {
+        while (identifier_part_match(input_p)) {}
         return token_new_strndup_no_data(TOKEN_LEXICAL_IDENTIFIER_NAME,
                                          input_old, *input_p);
     }
@@ -768,7 +769,7 @@ token_t *numeric_literal(gchar **input_p) {
  *     - DecimalDigits
  */
 token_t *decimal_literal(gchar **input_p) {
-    
+
 }
 
 static gint64 *integer_new(gint64 value) {
@@ -786,8 +787,8 @@ static gint64 *integer_parse(gchar *input, gchar *input_end, guint base) {
 
 #define DECIMAL_DIGITS "0123456789"
 
-gboolean match_decimal_digit(gchar **input_p) {
-    return match_chars(input_p, DECIMAL_DIGITS);
+static gboolean decimal_digit_match(gchar **input_p) {
+    return chars_match(input_p, DECIMAL_DIGITS);
 }
 
 /*
@@ -811,8 +812,8 @@ gboolean match_decimal_digit(gchar **input_p) {
 token_t *decimal_integer_literal(gchar **input_p) {
 
     gchar *input_old = *input_p;
-    if (match_decimal_digit(input_p)) {
-        while (match_decimal_digit(input_p)) {}
+    if (decimal_digit_match(input_p)) {
+        while (decimal_digit_match(input_p)) {}
         return token_new_strndup(TOKEN_LEXICAL_DECIMAL_INTEGER_LITERAL,
                                  input_old, *input_p,
                                  integer_parse(input_old, *input_p, 10),
@@ -833,8 +834,8 @@ gboolean binary_integer_is_first(gchar *input) {
 
 #define BINARY_DIGITS "01"
 
-static gboolean match_binary_digit(gchar **input_p) {
-    return match_chars(input_p, BINARY_DIGITS);
+static gboolean binary_digit_match(gchar **input_p) {
+    return chars_match(input_p, BINARY_DIGITS);
 }
 
 /*
@@ -847,11 +848,11 @@ static gboolean match_binary_digit(gchar **input_p) {
 token_t *binary_integer_literal(gchar **input_p) {
 
     gchar *input_old = *input_p;
-    if (match_text(input_p, TEXT_BINARY_INTEGER_PREFIX_1)
-        || match_text(input_p, TEXT_BINARY_INTEGER_PREFIX_2)) {
+    if (text_match(input_p, TEXT_BINARY_INTEGER_PREFIX_1)
+        || text_match(input_p, TEXT_BINARY_INTEGER_PREFIX_2)) {
         gchar *input_digit_start = *input_p;
-        if (match_binary_digit(input_p)) {
-            while (match_binary_digit(input_p)) {}
+        if (binary_digit_match(input_p)) {
+            while (binary_digit_match(input_p)) {}
             return token_new_strndup(TOKEN_LEXICAL_BINARY_INTEGER_LITERAL,
                                      input_old, *input_p,
                                      integer_parse(input_digit_start, *input_p,
@@ -873,8 +874,8 @@ gboolean octal_integer_is_first(gchar *input) {
 
 #define OCTAL_DIGITS "01234567"
 
-static gboolean match_octal_digit(gchar **input_p) {
-    return match_chars(input_p, OCTAL_DIGITS);
+static gboolean octal_digit_match(gchar **input_p) {
+    return chars_match(input_p, OCTAL_DIGITS);
 }
 
 /*
@@ -887,11 +888,11 @@ static gboolean match_octal_digit(gchar **input_p) {
 token_t *octal_integer_literal(gchar **input_p) {
 
     gchar *input_old = *input_p;
-    if (match_text(input_p, TEXT_OCTAL_INTEGER_PREFIX_1)
-        || match_text(input_p, TEXT_OCTAL_INTEGER_PREFIX_2)) {
+    if (text_match(input_p, TEXT_OCTAL_INTEGER_PREFIX_1)
+        || text_match(input_p, TEXT_OCTAL_INTEGER_PREFIX_2)) {
         gchar *input_digit_start = *input_p;
-        if (match_octal_digit(input_p)) {
-            while (match_octal_digit(input_p)) {}
+        if (octal_digit_match(input_p)) {
+            while (octal_digit_match(input_p)) {}
             return token_new_strndup(TOKEN_LEXICAL_OCTAL_INTEGER_LITERAL,
                                      input_old, *input_p,
                                      integer_parse(input_digit_start, *input_p,
@@ -913,8 +914,8 @@ gboolean hex_integer_is_first(gchar *input) {
 
 #define HEX_DIGITS "0123456789abcdefABCDEF"
 
-static gboolean match_hex_digit(gchar **input_p) {
-    return match_chars(input_p, HEX_DIGITS);
+static gboolean hex_digit_match(gchar **input_p) {
+    return chars_match(input_p, HEX_DIGITS);
 }
 
 /*
@@ -927,11 +928,11 @@ static gboolean match_hex_digit(gchar **input_p) {
 token_t *hex_integer_literal(gchar **input_p) {
 
     gchar *input_old = *input_p;
-    if (match_text(input_p, TEXT_HEX_INTEGER_PREFIX_1)
-        || match_text(input_p, TEXT_HEX_INTEGER_PREFIX_2)) {
+    if (text_match(input_p, TEXT_HEX_INTEGER_PREFIX_1)
+        || text_match(input_p, TEXT_HEX_INTEGER_PREFIX_2)) {
         gchar *input_digit_start = *input_p;
-        if (match_hex_digit(input_p)) {
-            while (match_hex_digit(input_p)) {}
+        if (hex_digit_match(input_p)) {
+            while (hex_digit_match(input_p)) {}
             return token_new_strndup(TOKEN_LEXICAL_HEX_INTEGER_LITERAL,
                                      input_old, *input_p,
                                      integer_parse(input_digit_start, *input_p,
@@ -943,7 +944,7 @@ token_t *hex_integer_literal(gchar **input_p) {
     return NULL;
 }
 
-gboolean match_unicode_escape_sequence(gchar **input_p) {
+gboolean unicode_escape_sequence_match(gchar **input_p) {
     // TODO
     return FALSE;
 }
