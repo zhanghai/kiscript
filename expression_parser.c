@@ -5,6 +5,7 @@
 
 #include "expression_parser.h"
 
+#include "lexical_parser.h"
 #include "syntactic_parser_utils.h"
 
 // PrimaryExpression = Keyword(this)|Identifier|NullLiteral|BooleanLiteral

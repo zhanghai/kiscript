@@ -6,7 +6,7 @@
 #ifndef KISCRIPT_EXPRESSION_PARSER_H
 #define KISCRIPT_EXPRESSION_PARSER_H
 
-#include "lexical_parser.h"
+#include "parser.h"
 
 token_t *primary_expression(GPtrArray *input, gsize *position_p);
 
