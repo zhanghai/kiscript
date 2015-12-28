@@ -8,4 +8,10 @@
 #include "lexical_parser.h"
 #include "syntactic_parser_utils.h"
 
+token_t *statement(GPtrArray *input, gsize *position_p) {
 
+    // TODO
+
+    // TODO: Error!
+    return NULL;
+}

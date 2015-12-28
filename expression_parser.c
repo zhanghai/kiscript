@@ -43,12 +43,12 @@ token_t *primary_expression(GPtrArray *input, gsize *position_p) {
         }
         if (punctuator_is_punctuator_with_id(token,
                                              PUNCTUATOR_PARENTHESIS_LEFT)) {
-            token_consume(input, position_p);
+            token_consume_free(input, position_p);
             token_t *expression_token = expression(input, position_p);
             if (token_get(input, *position_p, &token)) {
                 if (punctuator_is_punctuator_with_id(token,
                         PUNCTUATOR_PARENTHESIS_RIGHT)) {
-                    token_consume(input, position_p);
+                    token_consume_free(input, position_p);
                     return expression_token;
                 }
             }

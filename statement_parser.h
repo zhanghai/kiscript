@@ -8,4 +8,6 @@
 
 #include "parser.h"
 
+token_t *statement(GPtrArray *input, gsize *position_p);
+
 #endif //KISCRIPT_STATEMENT_PARSER_H
