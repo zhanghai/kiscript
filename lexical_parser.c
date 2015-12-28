@@ -775,37 +775,15 @@ gboolean boolean_literal_is_match(gchar *input) {
     return text_is_match(input, TEXT_TRUE) || text_is_match(input, TEXT_FALSE);
 }
 
-/*
- * NumericLiteral ::
- *     DecimalLiteral
- *     HexIntegerLiteral
- * The SourceCharacter immediately following a NumericLiteral must not be an
- * IdentifierStart or DecimalDigit.
- */
-token_t *numeric_literal(gchar **input_p) {
-
-    if (binary_integer_is_first(*input_p)) {
-        // TODO: Wrap child
-        return hex_integer_literal(input_p);
-    }
-    if (hex_integer_is_first(*input_p)) {
-        // TODO: Wrap child
-        return hex_integer_literal(input_p);
-    }
-
-    // TODO: Error!
-    return NULL;
-}
-
-static gdouble *real_new(gdouble value) {
+static gdouble *number_new(gdouble value) {
     gdouble *value_p = g_new(gdouble, 1);
     *value_p = value;
     return value_p;
 }
 
-static gdouble *real_new_parse(gchar *input, gchar *input_end) {
+static gdouble *number_new_parse(gchar *input, gchar *input_end) {
     gchar *text = g_strndup(input, input_end - input);
-    gdouble *value_p = real_new(g_ascii_strtod(text, NULL));
+    gdouble *value_p = number_new(g_ascii_strtod(text, NULL));
     g_free(text);
     if (errno) {
         // TODO: Handle overflow/underflow.
@@ -814,10 +792,20 @@ static gdouble *real_new_parse(gchar *input, gchar *input_end) {
     return value_p;
 }
 
-#define DECIMAL_DIGITS "0123456789"
+static gdouble *number_new_parse_integer(gchar *input, gchar *input_end,
+                                         guint base) {
+    gchar *text = g_strndup(input, input_end - input);
+    gdouble *value_p = number_new(g_ascii_strtoll(text, NULL, base));
+    g_free(text);
+    if (errno) {
+        // TODO: Handle overflow/underflow.
+        errno = 0;
+    }
+    return value_p;
+}
 
 static gboolean decimal_digit_match(gchar **input_p) {
-    return chars_match(input_p, DECIMAL_DIGITS);
+    return chars_match(input_p, "0123456789");
 }
 
 static DEFINE_MATCH_MULTIPLE_FUNC(decimal_digit_match)
@@ -826,13 +814,16 @@ static DEFINE_MATCH_MULTIPLE_FUNC(decimal_digit_match)
  * NONSTANDARD:
  * Doesn't allow ".1", or "1.".
  * DecimalLiteral ::
- *     DecimalDigit+ (. DecimalDigit+)? ExponentPart?
+ *     DecimalDigit+ (. DecimalDigit+)? (e|E (+|-)? DecimalDigit+)?
  *
  * STANDARD:
  * DecimalLiteral ::
- *     DecimalDigit+ (. DecimalDigit*)? ExponentPart?
+ *     (0|NonZeroDigit DecimalDigit*) (. DecimalDigit*)? ExponentPart?
  *     . DecimalDigit+ ExponentPart?
- *
+ * DecimalDigit :: one of
+ *     0 1 2 3 4 5 6 7 8 9
+ * NonZeroDigit :: one of
+ *     1 2 3 4 5 6 7 8 9
  * ExponentPart ::
  *     ExponentIndicator SignedInteger
  * ExponentIndicator ::
@@ -842,82 +833,30 @@ static DEFINE_MATCH_MULTIPLE_FUNC(decimal_digit_match)
  *     + DecimalDigits
  *     - DecimalDigits
  */
-token_t *decimal_literal(gchar **input_p) {
-    gchar *input_old = *input_p;
-    if (decimal_digit_match_multiple(input_p)) {
-        gboolean error = FALSE;
-        gchar *input_before_dot = *input_p;
-        if (char_match(input_p, '.')) {
-            if (decimal_digit_match_multiple(input_p)) {
-
-            } else {
-                error = TRUE;
+static token_t *decimal_literal(gchar **input_p) {
+    do {
+        gchar *input_old = *input_p;
+        // DecimalDigit+
+        if (decimal_digit_match_multiple(input_p)) {
+            // (. DecimalDigit+)?
+            if (char_match(input_p, '.')) {
+                if (!decimal_digit_match_multiple(input_p)) {
+                    break;
+                }
             }
-        } else {
-
+            // (e|E (+|-)? DecimalDigit+)?
+            if (chars_match(input_p, "eE")) {
+                chars_match(input_p, "+-");
+                if (!decimal_digit_match_multiple(input_p)) {
+                    break;
+                }
+            }
+            return token_new_strndup(TOKEN_LEXICAL_NUMERIC_LITERAL, input_old,
+                                     *input_p, number_new_parse(input_old,
+                                                                *input_p),
+                                     NULL);
         }
-    }
-    if (char_match(input_p, '.')) {
-        // . DecimalDigit+
-
-    } else {
-        // DecimalIntegerLiteral (. DecimalDigit*)?
-    }
-    // ExponentPart?
-}
-
-static gint64 *integer_new(gint64 value) {
-    gint64 *value_p = g_new(gint64, 1);
-    *value_p = value;
-    return value_p;
-}
-
-static gint64 *integer_new_parse(gchar *input, gchar *input_end, guint base) {
-    gchar *text = g_strndup(input, input_end - input);
-    gint64 *value_p = integer_new(g_ascii_strtoll(text, NULL, base));
-    g_free(text);
-    if (errno) {
-        // TODO: Handle overflow/underflow.
-        errno = 0;
-    }
-    return value_p;
-}
-
-gint64 *integer_literal_get_value(token_t *token) {
-    g_assert(token->id == TOKEN_LEXICAL_DECIMAL_INTEGER_LITERAL
-             || token->id == TOKEN_LEXICAL_BINARY_INTEGER_LITERAL
-             || token->id == TOKEN_LEXICAL_OCTAL_INTEGER_LITERAL
-             || token->id == TOKEN_LEXICAL_HEX_INTEGER_LITERAL);
-    return (gint64 *) token->data;
-}
-
-/*
- * NONSTANDARD:
- *
- * Allows 0+ as a DecimalIntegerLiteral.
- *
- * DecimalIntegerLiteral ::
- *     DecimalDigit+
- *
- * STANDARD:
- *
- * DecimalIntegerLiteral ::
- *     0
- *     NonZeroDigit DecimalDigit*
- * DecimalDigit :: one of
- *     0 1 2 3 4 5 6 7 8 9
- * NonZeroDigit :: one of
- *     1 2 3 4 5 6 7 8 9
- */
-token_t *decimal_integer_literal(gchar **input_p) {
-
-    gchar *input_old = *input_p;
-    if (decimal_digit_match_multiple(input_p)) {
-        return token_new_strndup(TOKEN_LEXICAL_DECIMAL_INTEGER_LITERAL,
-                                 input_old, *input_p,
-                                 integer_new_parse(input_old, *input_p, 10),
-                                 NULL);
-    }
+    } while (FALSE);
 
     // TODO: Error!
     return NULL;
@@ -926,15 +865,13 @@ token_t *decimal_integer_literal(gchar **input_p) {
 #define TEXT_BINARY_INTEGER_PREFIX_1 "0b"
 #define TEXT_BINARY_INTEGER_PREFIX_2 "0B"
 
-gboolean binary_integer_is_first(gchar *input) {
+static gboolean binary_integer_is_first(gchar *input) {
     return text_is_first(input, TEXT_BINARY_INTEGER_PREFIX_1)
            || text_is_first(input, TEXT_BINARY_INTEGER_PREFIX_2);
 }
 
-#define BINARY_DIGITS "01"
-
 static gboolean binary_digit_match(gchar **input_p) {
-    return chars_match(input_p, BINARY_DIGITS);
+    return chars_match(input_p, "01");
 }
 
 static DEFINE_MATCH_MULTIPLE_FUNC(binary_digit_match)
@@ -946,18 +883,18 @@ static DEFINE_MATCH_MULTIPLE_FUNC(binary_digit_match)
  * BinaryDigit :: one of
  *     0 1
  */
-token_t *binary_integer_literal(gchar **input_p) {
+static token_t *binary_integer_literal(gchar **input_p) {
 
     gchar *input_old = *input_p;
     if (text_match(input_p, TEXT_BINARY_INTEGER_PREFIX_1)
         || text_match(input_p, TEXT_BINARY_INTEGER_PREFIX_2)) {
         gchar *input_digit_start = *input_p;
         if (binary_digit_match_multiple(input_p)) {
-            return token_new_strndup(TOKEN_LEXICAL_BINARY_INTEGER_LITERAL,
-                                     input_old, *input_p,
-                                     integer_new_parse(input_digit_start,
-                                                       *input_p,
-                                                       2), NULL);
+            return token_new_strndup(TOKEN_LEXICAL_NUMERIC_LITERAL, input_old,
+                                     *input_p,
+                                     number_new_parse_integer(input_digit_start,
+                                                              *input_p, 2),
+                                     NULL);
         }
     }
 
@@ -968,15 +905,13 @@ token_t *binary_integer_literal(gchar **input_p) {
 #define TEXT_OCTAL_INTEGER_PREFIX_1 "0o"
 #define TEXT_OCTAL_INTEGER_PREFIX_2 "0O"
 
-gboolean octal_integer_is_first(gchar *input) {
+static gboolean octal_integer_is_first(gchar *input) {
     return text_is_first(input, TEXT_OCTAL_INTEGER_PREFIX_1)
            || text_is_first(input, TEXT_OCTAL_INTEGER_PREFIX_2);
 }
 
-#define OCTAL_DIGITS "01234567"
-
 static gboolean octal_digit_match(gchar **input_p) {
-    return chars_match(input_p, OCTAL_DIGITS);
+    return chars_match(input_p, "01234567");
 }
 
 static DEFINE_MATCH_MULTIPLE_FUNC(octal_digit_match)
@@ -988,18 +923,18 @@ static DEFINE_MATCH_MULTIPLE_FUNC(octal_digit_match)
  * OctalDigit :: one of
  *     0 1 2 3 4 5 6 7
  */
-token_t *octal_integer_literal(gchar **input_p) {
+static token_t *octal_integer_literal(gchar **input_p) {
 
     gchar *input_old = *input_p;
     if (text_match(input_p, TEXT_OCTAL_INTEGER_PREFIX_1)
         || text_match(input_p, TEXT_OCTAL_INTEGER_PREFIX_2)) {
         gchar *input_digit_start = *input_p;
         if (octal_digit_match_multiple(input_p)) {
-            return token_new_strndup(TOKEN_LEXICAL_OCTAL_INTEGER_LITERAL,
-                                     input_old, *input_p,
-                                     integer_new_parse(input_digit_start,
-                                                       *input_p,
-                                                       8), NULL);
+            return token_new_strndup(TOKEN_LEXICAL_NUMERIC_LITERAL, input_old,
+                                     *input_p,
+                                     number_new_parse_integer(input_digit_start,
+                                                              *input_p, 8),
+                                     NULL);
         }
     }
 
@@ -1010,15 +945,13 @@ token_t *octal_integer_literal(gchar **input_p) {
 #define TEXT_HEX_INTEGER_PREFIX_1 "0x"
 #define TEXT_HEX_INTEGER_PREFIX_2 "0X"
 
-gboolean hex_integer_is_first(gchar *input) {
+static gboolean hex_integer_is_first(gchar *input) {
     return text_is_first(input, TEXT_HEX_INTEGER_PREFIX_1)
            || text_is_first(input, TEXT_HEX_INTEGER_PREFIX_2);
 }
 
-#define HEX_DIGITS "0123456789abcdefABCDEF"
-
 static gboolean hex_digit_match(gchar **input_p) {
-    return chars_match(input_p, HEX_DIGITS);
+    return chars_match(input_p, "0123456789abcdefABCDEF");
 }
 
 static DEFINE_MATCH_MULTIPLE_FUNC(hex_digit_match)
@@ -1030,23 +963,58 @@ static DEFINE_MATCH_MULTIPLE_FUNC(hex_digit_match)
  * HexDigit :: one of
  *     0 1 2 3 4 5 6 7 8 9 a b c d e f A B C D E F
  */
-token_t *hex_integer_literal(gchar **input_p) {
+static token_t *hex_integer_literal(gchar **input_p) {
 
     gchar *input_old = *input_p;
     if (text_match(input_p, TEXT_HEX_INTEGER_PREFIX_1)
         || text_match(input_p, TEXT_HEX_INTEGER_PREFIX_2)) {
         gchar *input_digit_start = *input_p;
         if (hex_digit_match_multiple(input_p)) {
-            return token_new_strndup(TOKEN_LEXICAL_HEX_INTEGER_LITERAL,
-                                     input_old, *input_p,
-                                     integer_new_parse(input_digit_start,
-                                                       *input_p,
-                                                       16), NULL);
+            return token_new_strndup(TOKEN_LEXICAL_NUMERIC_LITERAL, input_old,
+                                     *input_p,
+                                     number_new_parse_integer(input_digit_start,
+                                                              *input_p, 16),
+                                     NULL);
         }
     }
 
     // TODO: Error!
     return NULL;
+}
+
+/*
+ * NumericLiteral ::
+ *     DecimalLiteral
+ *     BinaryIntegerLiteral
+ *     OctalIntegerLiteral
+ *     HexIntegerLiteral
+ * The SourceCharacter immediately following a NumericLiteral must not be an
+ * IdentifierStart or DecimalDigit.
+ */
+token_t *numeric_literal(gchar **input_p) {
+
+    token_t *token;
+    if (binary_integer_is_first(*input_p)) {
+        token = hex_integer_literal(input_p);
+    } else if (octal_integer_is_first(*input_p)) {
+        token = octal_integer_literal(input_p);
+    } else if (hex_integer_is_first(*input_p)) {
+        token = hex_integer_literal(input_p);
+    } else {
+        token = decimal_literal(input_p);
+    }
+
+    if (!identifier_start_is_first(*input_p)) {
+        return token;
+    } else {
+        // Error!
+        return NULL;
+    }
+}
+
+gdouble *numeric_literal_get_value(token_t *token) {
+    g_assert(token->id == TOKEN_LEXICAL_NUMERIC_LITERAL);
+    return (gdouble *) token->data;
 }
 
 gboolean unicode_escape_sequence_match(gchar **input_p) {
