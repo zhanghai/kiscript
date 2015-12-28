@@ -188,4 +188,8 @@ token_t *string_literal(gchar **input_p);
 gboolean unicode_escape_sequence_match_save_value(gchar **input_p,
                                                   GString *buffer);
 
+//token_t *primary_expression(gchar **input_p);
+//
+//token_t *expression(gchar **input_p);
+
 #endif //KISCRIPT_LEXICAL_PARSER_H

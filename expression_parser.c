@@ -89,3 +89,10 @@ token_t *expression(GPtrArray *input, gsize *position_t) {
     // TODO
     return NULL;
 }
+
+//ArrayLiteral :
+//[ Elisionopt ]
+//[ ElementList ]
+//[ ElementList , Elision(opt) ]
+//
+//QAQ I don't think I am a qualified coder.
