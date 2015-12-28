@@ -36,11 +36,9 @@ token_t *token(gchar **input_p);
 
 gboolean identifier_part_is_first(gchar *input);
 
-gboolean identifier_name_is_first(gchar *input);
+gboolean identifier_is_first(gchar *input);
 
 token_t *identifier(gchar **input_p);
-
-gboolean reserved_word_is_match(gchar *input);
 
 typedef enum {
     KEYWORD_BREAK,
@@ -75,7 +73,9 @@ gboolean keyword_is_first(gchar *input);
 
 token_t *keyword(gchar **input_p);
 
-gboolean keyword_is_match(gchar *input);
+keyword_id_t *keyword_get_id(token_t *token);
+
+gboolean keyword_is_keyword_with_id(token_t *token, keyword_id_t keyword_id);
 
 typedef enum {
     FUTURE_RESERVED_WORD_CLASS,
@@ -101,7 +101,10 @@ gboolean future_reserved_word_is_first(gchar *input);
 
 token_t *future_reserved_word(gchar **input_p);
 
-gboolean future_reserved_word_is_match(gchar *input);
+future_reserved_word_id_t *future_reserved_word_get_id(token_t *token);
+
+gboolean future_reserved_word_is_future_reserved_word_with_id(token_t *token,
+        future_reserved_word_id_t future_reserved_word_id);
 
 gboolean punctuator_is_first(gchar *input);
 
@@ -115,13 +118,9 @@ gboolean null_literal_is_first(gchar *input);
 
 token_t *null_literal(gchar **input_p);
 
-gboolean null_literal_is_match(gchar *input);
-
 gboolean boolean_literal_is_first(gchar *input);
 
 token_t *boolean_literal(gchar **input_p);
-
-gboolean boolean_literal_is_match(gchar *input);
 
 gboolean numeric_literal_is_first(gchar *input);
 

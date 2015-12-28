@@ -4,6 +4,7 @@
 //
 
 #include "lexical_parser.h"
+#include "parser.h"
 
 #include <errno.h>
 
@@ -307,11 +308,6 @@ token_t *single_line_comment(gchar **input_p) {
     return NULL;
 }
 
-gboolean reserved_word_is_match(gchar *input) {
-    return keyword_is_match(input) || future_reserved_word_is_match(input)
-           || null_literal_is_match(input) || boolean_literal_is_match(input);
-}
-
 static char *KEYWORDS[] = {
         "break",
         "do",
@@ -362,8 +358,14 @@ token_t *keyword(gchar **input_p) {
     return NULL;
 }
 
-gboolean keyword_is_match(gchar *input) {
-    return text_array_is_match(input, KEYWORDS, G_N_ELEMENTS(KEYWORDS));
+keyword_id_t *keyword_get_id(token_t *token) {
+    g_assert(token->id == TOKEN_LEXICAL_KEYWORD);
+    return (keyword_id_t *) token->data;
+}
+
+gboolean keyword_is_keyword_with_id(token_t *token, keyword_id_t keyword_id) {
+    return token->id == TOKEN_LEXICAL_KEYWORD
+           && *keyword_get_id(token) == keyword_id;
 }
 
 static char *FUTURE_RESERVED_WORDS[] = {
@@ -417,9 +419,10 @@ future_reserved_word_id_t *future_reserved_word_get_id(token_t *token) {
     return (future_reserved_word_id_t *) token->data;
 }
 
-gboolean future_reserved_word_is_match(gchar *input) {
-    return text_array_is_match(input, FUTURE_RESERVED_WORDS,
-                               G_N_ELEMENTS(FUTURE_RESERVED_WORDS));
+gboolean future_reserved_word_is_future_reserved_word_with_id(token_t *token,
+        future_reserved_word_id_t future_reserved_word_id) {
+    return token->id == TOKEN_LEXICAL_FUTURE_RESERVED_WORD
+           && *future_reserved_word_get_id(token) == future_reserved_word_id;
 }
 
 static gboolean unicode_letter_is_first(gchar *input) {
@@ -588,7 +591,7 @@ static gboolean identifier_part_match_save_value(gchar **input_p,
 static DEFINE_MATCH_ANY_SAVE_FUNC(identifier_part_match_any_save_value,
                                   identifier_part_match_save_value)
 
-gboolean identifier_name_is_first(gchar *input) {
+gboolean identifier_is_first(gchar *input) {
     return identifier_start_is_first(input);
 }
 
@@ -720,10 +723,6 @@ token_t *null_literal(gchar **input_p) {
     return NULL;
 }
 
-gboolean null_literal_is_match(gchar *input) {
-    return text_is_match(input, TEXT_NULL);
-}
-
 gboolean *boolean_new(gboolean value) {
     gboolean *value_p = g_new(gboolean, 1);
     *value_p = value;
@@ -756,10 +755,6 @@ token_t *boolean_literal(gchar **input_p) {
 
     // TODO: Error!
     return NULL;
-}
-
-gboolean boolean_literal_is_match(gchar *input) {
-    return text_is_match(input, TEXT_TRUE) || text_is_match(input, TEXT_FALSE);
 }
 
 static gdouble *number_new(gdouble value) {

@@ -23,7 +23,6 @@ typedef enum {
     TOKEN_LEXICAL_BOOLEAN_LITERAL,
     TOKEN_LEXICAL_NUMERIC_LITERAL,
     TOKEN_LEXICAL_STRING_LITERAL,
-    TOKEN_EXPRESSION_IDENTIFIER
 } token_id_t;
 
 typedef struct {
@@ -118,6 +117,10 @@ gboolean text_array_match_save_index(gchar **input_p, gchar **text_array,
 
 gboolean text_array_is_match(gchar *input, gchar **text_array,
                              gsize text_array_length);
+
+gboolean g_ptr_array_in_range(GPtrArray *array, gsize position) {
+    return position >= 0 && position < array->len;
+}
 
 #define DEFINE_MATCH_ANY_FUNC(match_func) \
     void match_func##_any(gchar **input_p) { \
