@@ -38,7 +38,7 @@ gboolean identifier_part_is_first(gchar *input);
 
 gboolean identifier_name_is_first(gchar *input);
 
-token_t *identifier_name(gchar **input_p);
+token_t *identifier(gchar **input_p);
 
 gboolean reserved_word_is_match(gchar *input);
 

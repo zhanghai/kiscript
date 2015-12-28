@@ -18,7 +18,7 @@ GPtrArray *lexical_token_list(gchar **input_p) {
 /*
  * NONSTANDARD:
  * LexicalToken ::
- *     IdentifierName
+ *     Identifier
  *     Keyword
  *     FutureReservedWord
  *     NullLiteral
@@ -41,7 +41,7 @@ token_t *lexical_token(gchar **input_p) {
     // NOTE:
     // {keyword,future_reserved_word,null_literal,boolean_literal}_is_first
     // checks identifier_part_is_first().
-    return_token_if_is_first(input_p, identifier_name)
+    return_token_if_is_first(input_p, identifier)
     return_token_if_is_first(input_p, numeric_literal)
     return_token_if_is_first(input_p, string_literal)
     return_token_if_is_first(input_p, punctuator)
@@ -593,17 +593,20 @@ gboolean identifier_name_is_first(gchar *input) {
 }
 
 /*
- * IdentifierName ::
+ * NONSTANDARD:
+ * Merging IdentifierName into Identifier
+ * Identifier ::
  *     IdentifierStart IdentifierPart*
+ * Identifier is not ReservedWord
  */
-token_t *identifier_name(gchar **input_p) {
+token_t *identifier(gchar **input_p) {
 
     gchar *input_old = *input_p;
     GString *string = g_string_new(NULL);
     if (identifier_start_match_save_value(input_p, string)) {
         identifier_part_match_any_save_value(input_p, string);
-        return token_new_strndup_gstring(TOKEN_LEXICAL_IDENTIFIER_NAME,
-                                         input_old, *input_p, string);
+        return token_new_strndup_gstring(TOKEN_LEXICAL_IDENTIFIER, input_old,
+                                         *input_p, string);
     }
 
     // TODO: Error!

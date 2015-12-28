@@ -8,6 +8,4 @@
 
 #include "lexical_parser.h"
 
-token_t *identifier(gchar **input_p);
-
 #endif //KISCRIPT_EXPRESSION_PARSER_H
