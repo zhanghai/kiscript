@@ -461,6 +461,20 @@ token_t *identifier(gchar **input_p) {
     return NULL;
 }
 
+static gboolean unicode_letter_is_first(gchar *input) {
+    switch (g_unichar_type(g_utf8_get_char(input))) {
+        case G_UNICODE_UPPERCASE_LETTER:
+        case G_UNICODE_LOWERCASE_LETTER:
+        case G_UNICODE_TITLECASE_LETTER:
+        case G_UNICODE_MODIFIER_LETTER:
+        case G_UNICODE_OTHER_LETTER:
+        case G_UNICODE_LETTER_NUMBER:
+            return TRUE;
+        default:
+            return FALSE;
+    }
+}
+
 /*
  * UnicodeLetter ::
  *     any character in the Unicode categories “Uppercase letter (Lu)”,
@@ -469,18 +483,17 @@ token_t *identifier(gchar **input_p) {
  *             “Letter number (Nl)”.
  */
 static gboolean match_unicode_letter(gchar **input_p) {
-    switch (g_unichar_type(g_utf8_get_char(*input_p))) {
-        case G_UNICODE_UPPERCASE_LETTER:
-        case G_UNICODE_LOWERCASE_LETTER:
-        case G_UNICODE_TITLECASE_LETTER:
-        case G_UNICODE_MODIFIER_LETTER:
-        case G_UNICODE_OTHER_LETTER:
-        case G_UNICODE_LETTER_NUMBER:
-            consume_char(input_p);
-            return TRUE;
-        default:
-            return FALSE;
+    if (unicode_letter_is_first(*input_p)) {
+        consume_char(input_p);
+        return TRUE;
+    } else {
+        return FALSE;
     }
+}
+
+static gboolean identifier_start_is_first(gchar *input) {
+    return unicode_letter_is_first(input) || char_is_first(input, '$')
+           || char_is_first(input, '_') || char_is_first(input, '\\');
 }
 
 /**
@@ -722,14 +735,18 @@ gboolean boolean_literal_is_match(gchar *input) {
  * NumericLiteral ::
  *     DecimalLiteral
  *     HexIntegerLiteral
+ * The SourceCharacter immediately following a NumericLiteral must not be an
+ * IdentifierStart or DecimalDigit.
  */
 token_t *numeric_literal(gchar **input_p) {
 
+    if (binary_integer_is_first(*input_p)) {
+        // TODO: Wrap child
+        return hex_integer_literal(input_p);
+    }
     if (hex_integer_is_first(*input_p)) {
         // TODO: Wrap child
         return hex_integer_literal(input_p);
-    } else {
-
     }
 
     // TODO: Error!
@@ -751,10 +768,38 @@ token_t *numeric_literal(gchar **input_p) {
  *     - DecimalDigits
  */
 token_t *decimal_literal(gchar **input_p) {
+    
+}
 
+static gint64 *integer_new(gint64 value) {
+    gint64 *value_p = g_new(gint64, 1);
+    *value_p = value;
+    return value_p;
+}
+
+static gint64 *integer_parse(gchar *input, gchar *input_end, guint base) {
+    gchar *digits = g_strndup(input, input_end - input);
+    gint64 *value_p = integer_new(g_ascii_strtoll(digits, NULL, base));
+    g_free(digits);
+    return value_p;
+}
+
+#define DECIMAL_DIGITS "0123456789"
+
+gboolean match_decimal_digit(gchar **input_p) {
+    return match_chars(input_p, DECIMAL_DIGITS);
 }
 
 /*
+ * NONSTANDARD:
+ *
+ * Allows 0+ as a DecimalIntegerLiteral.
+ *
+ * DecimalIntegerLiteral ::
+ *     DecimalDigit+
+ *
+ * STANDARD:
+ *
  * DecimalIntegerLiteral ::
  *     0
  *     NonZeroDigit DecimalDigit*
@@ -765,15 +810,110 @@ token_t *decimal_literal(gchar **input_p) {
  */
 token_t *decimal_integer_literal(gchar **input_p) {
 
+    gchar *input_old = *input_p;
+    if (match_decimal_digit(input_p)) {
+        while (match_decimal_digit(input_p)) {}
+        return token_new_strndup(TOKEN_LEXICAL_DECIMAL_INTEGER_LITERAL,
+                                 input_old, *input_p,
+                                 integer_parse(input_old, *input_p, 10),
+                                 NULL);
+    }
+
+    // TODO: Error!
+    return NULL;
 }
 
+#define TEXT_BINARY_INTEGER_PREFIX_1 "0b"
+#define TEXT_BINARY_INTEGER_PREFIX_2 "0B"
+
+gboolean binary_integer_is_first(gchar *input) {
+    return text_is_first(input, TEXT_BINARY_INTEGER_PREFIX_1)
+           || text_is_first(input, TEXT_BINARY_INTEGER_PREFIX_2);
+}
+
+#define BINARY_DIGITS "01"
+
+static gboolean match_binary_digit(gchar **input_p) {
+    return match_chars(input_p, BINARY_DIGITS);
+}
+
+/*
+ * BinaryIntegerLiteral ::
+ *     0b BinaryDigit+
+ *     0B BinaryDigit+
+ * BinaryDigit :: one of
+ *     0 1
+ */
+token_t *binary_integer_literal(gchar **input_p) {
+
+    gchar *input_old = *input_p;
+    if (match_text(input_p, TEXT_BINARY_INTEGER_PREFIX_1)
+        || match_text(input_p, TEXT_BINARY_INTEGER_PREFIX_2)) {
+        gchar *input_digit_start = *input_p;
+        if (match_binary_digit(input_p)) {
+            while (match_binary_digit(input_p)) {}
+            return token_new_strndup(TOKEN_LEXICAL_BINARY_INTEGER_LITERAL,
+                                     input_old, *input_p,
+                                     integer_parse(input_digit_start, *input_p,
+                                                   2), NULL);
+        }
+    }
+
+    // TODO: Error!
+    return NULL;
+}
+
+#define TEXT_OCTAL_INTEGER_PREFIX_1 "0o"
+#define TEXT_OCTAL_INTEGER_PREFIX_2 "0O"
+
+gboolean octal_integer_is_first(gchar *input) {
+    return text_is_first(input, TEXT_OCTAL_INTEGER_PREFIX_1)
+           || text_is_first(input, TEXT_OCTAL_INTEGER_PREFIX_2);
+}
+
+#define OCTAL_DIGITS "01234567"
+
+static gboolean match_octal_digit(gchar **input_p) {
+    return match_chars(input_p, OCTAL_DIGITS);
+}
+
+/*
+ * OctalIntegerLiteral ::
+ *     0x OctalDigit+
+ *     0X OctalDigit+
+ * OctalDigit :: one of
+ *     0 1 2 3 4 5 6 7
+ */
+token_t *octal_integer_literal(gchar **input_p) {
+
+    gchar *input_old = *input_p;
+    if (match_text(input_p, TEXT_OCTAL_INTEGER_PREFIX_1)
+        || match_text(input_p, TEXT_OCTAL_INTEGER_PREFIX_2)) {
+        gchar *input_digit_start = *input_p;
+        if (match_octal_digit(input_p)) {
+            while (match_octal_digit(input_p)) {}
+            return token_new_strndup(TOKEN_LEXICAL_OCTAL_INTEGER_LITERAL,
+                                     input_old, *input_p,
+                                     integer_parse(input_digit_start, *input_p,
+                                                   8), NULL);
+        }
+    }
+
+    // TODO: Error!
+    return NULL;
+}
+
+#define TEXT_HEX_INTEGER_PREFIX_1 "0x"
+#define TEXT_HEX_INTEGER_PREFIX_2 "0X"
+
 gboolean hex_integer_is_first(gchar *input) {
-    return text_is_first(input, "0x") || text_is_first(input, "0X");
+    return text_is_first(input, TEXT_HEX_INTEGER_PREFIX_1)
+           || text_is_first(input, TEXT_HEX_INTEGER_PREFIX_2);
 }
 
 #define HEX_DIGITS "0123456789abcdefABCDEF"
 
-gboolean match_hex_digit(gchar **input_p) {
+static gboolean match_hex_digit(gchar **input_p) {
     return match_chars(input_p, HEX_DIGITS);
 }
 
@@ -787,17 +927,15 @@ gboolean match_hex_digit(gchar **input_p) {
 token_t *hex_integer_literal(gchar **input_p) {
 
     gchar *input_old = *input_p;
-    if (match_text(input_p, "0x") || match_text(input_p, "0X")) {
+    if (match_text(input_p, TEXT_HEX_INTEGER_PREFIX_1)
+        || match_text(input_p, TEXT_HEX_INTEGER_PREFIX_2)) {
         gchar *input_digit_start = *input_p;
         if (match_hex_digit(input_p)) {
             while (match_hex_digit(input_p)) {}
-            gchar *digits = g_strndup(input_digit_start,
-                                      *input_p - input_digit_start);
-            gint64 *value_p = g_new(gint64, 1);
-            *value_p = g_ascii_strtoll(digits, NULL, 16);
-            g_free(digits);
             return token_new_strndup(TOKEN_LEXICAL_HEX_INTEGER_LITERAL,
-                                     input_old, *input_p, value_p, NULL);
+                                     input_old, *input_p,
+                                     integer_parse(input_digit_start, *input_p,
+                                                   16), NULL);
         }
     }
 
