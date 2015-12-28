@@ -7,36 +7,46 @@
 
 #include <errno.h>
 
+GPtrArray *lexical_token_list(gchar **input_p) {
+    GPtrArray *token_list = g_ptr_array_new();
+    while (**input_p) {
+        g_ptr_array_add(token_list, lexical_token(input_p));
+    }
+    return token_list;
+}
+
 /*
- * InputElementDiv ::
+ * NONSTANDARD:
+ * LexicalToken ::
+ *     IdentifierName
+ *     Keyword
+ *     FutureReservedWord
+ *     NullLiteral
+ *     BooleanLiteral
+ *     NumericLiteral
+ *     StringLiteral
+ *     Punctuator
+ *     DivPunctuator
  *     WhiteSpace
  *     LineTerminator
- *     Comment
- *     Token
- *     DivPunctuator
+ *     SingleLineComment
+ *     MultiLineComment
  */
-token_t *input_element_div(gchar **input_p) {
+token_t *lexical_token(gchar **input_p) {
 
-    if (white_space_is_first(*input_p)) {
-        // TODO: Wrap as child!
-        return white_space(input_p);
-    }
-    if (line_terminator_is_first(*input_p)) {
-        // TODO: Wrap as child!
-        return line_terminator(input_p);
-    }
-    if (comment_is_first(*input_p)) {
-        // TODO: Wrap as child!
-        return comment(input_p);
-    }
-    if (token_is_first(*input_p)) {
-        // TODO: Wrap as child!
-        return token(input_p);
-    }
-    if (div_punctuator_is_first(*input_p)) {
-        // TODO: Wrap as child!
-        return div_punctuator(input_p);
-    }
+    return_token_if_is_first(input_p, identifier_name)
+    return_token_if_is_first(input_p, keyword)
+    return_token_if_is_first(input_p, future_reserved_word)
+    return_token_if_is_first(input_p, null_literal)
+    return_token_if_is_first(input_p, boolean_literal)
+    return_token_if_is_first(input_p, numeric_literal)
+    return_token_if_is_first(input_p, string_literal)
+    return_token_if_is_first(input_p, punctuator)
+    return_token_if_is_first(input_p, div_punctuator)
+    return_token_if_is_first(input_p, white_space)
+    return_token_if_is_first(input_p, line_terminator)
+    return_token_if_is_first(input_p, single_line_comment)
+    return_token_if_is_first(input_p, multi_line_comment)
 
     // TODO: Error!
     return NULL;
@@ -191,33 +201,6 @@ token_t *line_terminator_sequence(gchar **input_p) {
     return NULL;
 }
 
-gboolean comment_is_first(gchar *input) {
-    return multi_line_comment_is_first(input)
-           || single_line_comment_is_first(input);
-}
-
-/*
- * Comment ::
- *     MultiLineComment
- *     SingleLineComment
- */
-token_t *comment(gchar **input_p) {
-
-    // MultiLineComment
-    if (multi_line_comment_is_first(*input_p)) {
-        // TODO: Wrap as child!
-        return multi_line_comment(input_p);
-    }
-    // SingleLineComment
-    if (single_line_comment_is_first(*input_p)) {
-        // TODO: Wrap as child!
-        return single_line_comment(input_p);
-    }
-
-    // TODO: Error!
-    return NULL;
-}
-
 gboolean multi_line_comment_is_first(gchar *input) {
     return text_is_first(input, "/*");
 }
@@ -321,39 +304,9 @@ token_t *single_line_comment(gchar **input_p) {
     return NULL;
 }
 
-gboolean token_is_first(gchar *input) {
-    return identifier_name_is_first(input) || punctuator_is_first(input)
-           || numeric_literal_is_first(input) || string_literal_is_first(input);
-}
-
-/*
- * Token ::
- *     IdentifierName
- *     Punctuator
- *     NumericLiteral
- *     StringLiteral
- */
-token_t *token(gchar **input_p) {
-
-    if (identifier_name_is_first(*input_p)) {
-        // TODO: Wrap as child!
-        return identifier_name(input_p);
-    }
-    if (punctuator_is_first(*input_p)) {
-        // TODO: Wrap as child!
-        return punctuator(input_p);
-    }
-    if (numeric_literal_is_first(*input_p)) {
-        // TODO: Wrap as child!
-        return numeric_literal(input_p);
-    }
-    if (string_literal_is_first(*input_p)) {
-        // TODO: Wrap as child!
-        return string_literal(input_p);
-    }
-
-    // TODO: Error!
-    return NULL;
+gboolean reserved_word_is_match(gchar *input) {
+    return keyword_is_match(input) || future_reserved_word_is_match(input)
+           || null_literal_is_match(input) || boolean_literal_is_match(input);
 }
 
 static char *KEYWORDS[] = {
@@ -385,13 +338,28 @@ static char *KEYWORDS[] = {
         "try"
 };
 
-static gboolean keyword_is_match(gchar *input) {
-    for (gsize i = 0; i < G_N_ELEMENTS(KEYWORDS); ++i) {
-        if (text_is_match(input, KEYWORDS[i])) {
-            return TRUE;
-        }
+gboolean keyword_is_first(gchar *input) {
+    return text_array_is_first(input, KEYWORDS, G_N_ELEMENTS(KEYWORDS));
+}
+
+static DEFINE_ENUM_NEW(keyword_id)
+
+token_t *keyword(gchar **input_p) {
+
+    gchar *input_old = *input_p;
+    gsize index;
+    if (text_array_match_save_index(input_p, KEYWORDS, G_N_ELEMENTS(KEYWORDS),
+                                    &index)) {
+        return token_new_strndup(TOKEN_LEXICAL_KEYWORD, input_old, *input_p,
+                                 keyword_id_new((keyword_id_t) index), NULL);
     }
-    return FALSE;
+
+    // TODO: Error!
+    return NULL;
+}
+
+gboolean keyword_is_match(gchar *input) {
+    return text_array_is_match(input, KEYWORDS, G_N_ELEMENTS(KEYWORDS));
 }
 
 static char *FUTURE_RESERVED_WORDS[] = {
@@ -414,34 +382,39 @@ static char *FUTURE_RESERVED_WORDS[] = {
         "static"
 };
 
-static gboolean future_reserved_word_is_match(gchar *input) {
-    for (gsize i = 0; i < G_N_ELEMENTS(FUTURE_RESERVED_WORDS); ++i) {
-        if (text_is_match(input, FUTURE_RESERVED_WORDS[i])) {
-            return TRUE;
-        }
-    }
-    return FALSE;
+gboolean future_reserved_word_is_first(gchar *input) {
+    return text_array_is_first(input, FUTURE_RESERVED_WORDS,
+                               G_N_ELEMENTS(FUTURE_RESERVED_WORDS));
 }
 
-static gboolean reserved_word_is_match(gchar *input) {
-    return keyword_is_match(input) || future_reserved_word_is_match(input)
-           || null_literal_is_match(input) || boolean_literal_is_match(input);
-}
+static DEFINE_ENUM_NEW(future_reserved_word_id)
 
-/*
- * Identifier ::
- *     IdentifierName but not ReservedWord
- */
-token_t *identifier(gchar **input_p) {
+token_t *future_reserved_word(gchar **input_p) {
 
-    token_t *identifier_name_token = identifier_name(input_p);
-    if (!reserved_word_is_match(identifier_name_token->text)) {
-        // TODO: Wrap child.
-        return identifier_name_token;
+    gchar *input_old = *input_p;
+    gsize index;
+    if (text_array_match_save_index(input_p, FUTURE_RESERVED_WORDS,
+                                    G_N_ELEMENTS(FUTURE_RESERVED_WORDS),
+                                    &index)) {
+        return token_new_strndup(TOKEN_LEXICAL_FUTURE_RESERVED_WORD, input_old,
+                                 *input_p,
+                                 future_reserved_word_id_new(
+                                         (future_reserved_word_id_t) index),
+                                 NULL);
     }
 
     // TODO: Error!
     return NULL;
+}
+
+future_reserved_word_id_t *future_reserved_word_get_id(token_t *token) {
+    g_assert(token->id == TOKEN_LEXICAL_FUTURE_RESERVED_WORD);
+    return (future_reserved_word_id_t *) token->data;
+}
+
+gboolean future_reserved_word_is_match(gchar *input) {
+    return text_array_is_match(input, FUTURE_RESERVED_WORDS,
+                               G_N_ELEMENTS(FUTURE_RESERVED_WORDS));
 }
 
 static gboolean unicode_letter_is_first(gchar *input) {
@@ -651,12 +624,8 @@ static char *PUNCTUATORS[] = {
 };
 
 gboolean punctuator_is_first(gchar *input) {
-    for (gsize i = 0; i < G_N_ELEMENTS(FUTURE_RESERVED_WORDS); ++i) {
-        if (text_is_first(input, FUTURE_RESERVED_WORDS[i])) {
-            return TRUE;
-        }
-    }
-    return FALSE;
+    return text_array_is_first(input, FUTURE_RESERVED_WORDS,
+                               G_N_ELEMENTS(FUTURE_RESERVED_WORDS));
 }
 
 token_t *punctuator(gchar **input_p) {
@@ -676,12 +645,8 @@ static char *DIV_PUNCTUATORS[] = {
 };
 
 gboolean div_punctuator_is_first(gchar *input) {
-    for (gsize i = 0; i < G_N_ELEMENTS(DIV_PUNCTUATORS); ++i) {
-        if (text_is_first(input, DIV_PUNCTUATORS[i])) {
-            return TRUE;
-        }
-    }
-    return FALSE;
+    return text_array_is_first(input, DIV_PUNCTUATORS,
+                               G_N_ELEMENTS(DIV_PUNCTUATORS));
 }
 
 token_t *div_punctuator(gchar **input_p) {
@@ -696,6 +661,10 @@ token_t *div_punctuator(gchar **input_p) {
 }
 
 #define TEXT_NULL "null"
+
+gboolean null_literal_is_first(gchar *input) {
+    return text_is_first(input, TEXT_NULL);
+}
 
 /*
  * NullLiteral ::
@@ -722,6 +691,10 @@ gboolean *boolean_new(gboolean value) {
 
 #define TEXT_TRUE "true"
 #define TEXT_FALSE "false"
+
+gboolean boolean_literal_is_first(gchar *input) {
+    return text_is_first(input, TEXT_TRUE) || text_is_first(input, TEXT_FALSE);
+}
 
 /*
  * BooleanLiteral ::

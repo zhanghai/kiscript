@@ -246,6 +246,37 @@ gboolean text_is_match(gchar *input, gchar *text) {
     return g_strcmp0(input, text) == 0;
 }
 
+gboolean text_array_is_first(gchar *input, gchar **text_array,
+                             gsize text_array_length) {
+    for (gsize i = 0; i < text_array_length; ++i) {
+        if (text_is_first(input, text_array[i])) {
+            return TRUE;
+        }
+    }
+    return FALSE;
+}
+
+gboolean text_array_match_save_index(gchar **input_p, gchar **text_array,
+                                     gsize text_array_length, gsize *index_p) {
+    for (gsize i = 0; i < text_array_length; ++i) {
+        if (text_match(input_p, text_array[i])) {
+            *index_p = i;
+            return TRUE;
+        }
+    }
+    return FALSE;
+}
+
+gboolean text_array_is_match(gchar *input, gchar **text_array,
+                             gsize text_array_length) {
+    for (gsize i = 0; i < text_array_length; ++i) {
+        if (text_is_match(input, text_array[i])) {
+            return TRUE;
+        }
+    }
+    return FALSE;
+}
+
 
 void normalize_input(gchar **input_p) {
 

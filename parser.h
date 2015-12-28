@@ -9,21 +9,21 @@
 #include <glib.h>
 
 typedef enum {
-    TOKEN_LEXICAL_INPUT_ELEMENT_DIV,
     TOKEN_LEXICAL_WHITE_SPACE,
     TOKEN_LEXICAL_LINE_TERMINATOR,
     TOKEN_LEXICAL_LINE_TERMINATOR_SEQUENCE,
-    TOKEN_LEXICAL_COMMENT,
     TOKEN_LEXICAL_MULTI_LINE_COMMENT,
     TOKEN_LEXICAL_SINGLE_LINE_COMMENT,
-    TOKEN_LEXICAL_IDENTIFIER,
     TOKEN_LEXICAL_IDENTIFIER_NAME,
+    TOKEN_LEXICAL_KEYWORD,
+    TOKEN_LEXICAL_FUTURE_RESERVED_WORD,
     TOKEN_LEXICAL_PUNCTUATOR,
     TOKEN_LEXICAL_DIV_PUNCTUATOR,
     TOKEN_LEXICAL_NULL_LITERAL,
     TOKEN_LEXICAL_BOOLEAN_LITERAL,
     TOKEN_LEXICAL_NUMERIC_LITERAL,
-    TOKEN_LEXICAL_STRING_LITERAL
+    TOKEN_LEXICAL_STRING_LITERAL,
+    TOKEN_EXPRESSION_IDENTIFIER
 } token_id_t;
 
 typedef struct {
@@ -107,6 +107,15 @@ gboolean text_match_save(gchar **input_p, gchar *text, GString *buffer);
 
 gboolean text_is_match(gchar *input, gchar *text);
 
+gboolean text_array_is_first(gchar *input, gchar **text_array,
+                             gsize text_array_length);
+
+gboolean text_array_match_save_index(gchar **input_p, gchar **text_array,
+                                     gsize text_array_length, gsize *index_p);
+
+gboolean text_array_is_match(gchar *input, gchar **text_array,
+                             gsize text_array_length);
+
 #define DEFINE_MATCH_ANY_FUNC(match_func) \
     void match_func##_any(gchar **input_p) { \
         while (match_func(input_p)) {} \
@@ -135,6 +144,18 @@ gboolean text_is_match(gchar *input, gchar *text);
         } else { \
             return FALSE; \
         } \
+    }
+
+#define DEFINE_ENUM_NEW(enum_name) \
+    enum_name##_t *enum_name##_new(enum_name##_t value) { \
+        enum_name##_t *value_p = g_new(enum_name##_t, 1); \
+        *value_p = value; \
+        return value_p; \
+    }
+
+#define return_token_if_is_first(input_p, token_name) \
+    if (token_name##_is_first(*(input_p))) { \
+        return token_name((input_p));\
     }
 
 #define try_match_and_return_token(input_p, match, token_id) \
