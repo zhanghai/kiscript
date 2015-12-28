@@ -100,6 +100,7 @@ gboolean text_match(gchar **input_p, gchar *text) {
  *     DivPunctuator
  */
 token_t *input_element_div(gchar **input_p) {
+    // TODO
     white_space(input_p);
     line_terminator(input_p);
     comment(input_p);
@@ -107,22 +108,38 @@ token_t *input_element_div(gchar **input_p) {
     div_punctuator(input_p);
 }
 
+static gboolean usp_is_first(gchar *input) {
+    return g_unichar_isspace(g_utf8_get_char(input));
+}
+
 static gboolean usp_match(gchar **input_p) {
-    if (g_unichar_isspace(g_utf8_get_char(*input_p))) {
-        *input_p = g_utf8_next_char(*input_p);
+    if (usp_is_first(*input_p)) {
+        char_consume(input_p);
         return TRUE;
     } else {
         return FALSE;
     }
 }
 
-// TODO
-#define CHARACTER_TAB_CHAR
-#define CHARACTER_VT_CHAR
-#define CHARACTER_FF_CHAR
-#define CHARACTER_SP_CHAR
-#define CHARACTER_NBSP_CHAR
-#define CHARACTER_BOM_CHAR
+#define CHARACTER_TAB_CHAR '\u0009'
+#define CHARACTER_VT_CHAR '\u000B'
+#define CHARACTER_FF_CHAR '\u000C'
+#define CHARACTER_SP_CHAR '\u0020'
+// TODO: NO_BREAK SPACE in UTF-8 is 0xc2a0, while the C code is '\u00a0',
+// according to http://www.fileformat.info/info/unicode/char/00a0/index.htm .
+// Will this give the correct behavior?
+#define CHARACTER_NBSP_TEXT "\u00A0"
+#define CHARACTER_BOM_TEXT "\uFEFF"
+
+gboolean white_space_is_first(gchar *input) {
+    return char_is_first(input, CHARACTER_TAB_CHAR)
+           || char_is_first(input, CHARACTER_VT_CHAR)
+           || char_is_first(input, CHARACTER_FF_CHAR)
+           || char_is_first(input, CHARACTER_SP_CHAR)
+           || text_is_first(input, CHARACTER_NBSP_TEXT)
+           || text_is_first(input, CHARACTER_BOM_TEXT)
+           || usp_is_first(input);
+}
 
 /*
  * WhiteSpace ::
@@ -137,17 +154,23 @@ static gboolean usp_match(gchar **input_p) {
 token_t *white_space(gchar **input_p) {
 
     // <TAB>
-    try_match_char_and_return_token(input_p, TOKEN_LEXICAL_WHITE_SPACE, '\u0009')
+    try_match_char_and_return_token(input_p, TOKEN_LEXICAL_WHITE_SPACE,
+                                    CHARACTER_TAB_CHAR)
     // <VT>
-    try_match_char_and_return_token(input_p, TOKEN_LEXICAL_WHITE_SPACE, '\u000B')
+    try_match_char_and_return_token(input_p, TOKEN_LEXICAL_WHITE_SPACE,
+                                    CHARACTER_VT_CHAR)
     // <FF>
-    try_match_char_and_return_token(input_p, TOKEN_LEXICAL_WHITE_SPACE, '\u000C')
+    try_match_char_and_return_token(input_p, TOKEN_LEXICAL_WHITE_SPACE,
+                                    CHARACTER_FF_CHAR)
     // <SP>
-    try_match_char_and_return_token(input_p, TOKEN_LEXICAL_WHITE_SPACE, '\u0020')
+    try_match_char_and_return_token(input_p, TOKEN_LEXICAL_WHITE_SPACE,
+                                    CHARACTER_SP_CHAR)
     // <NBSP>
-    try_match_char_and_return_token(input_p, TOKEN_LEXICAL_WHITE_SPACE, '\u00A0')
+    try_match_text_and_return_token(input_p, TOKEN_LEXICAL_WHITE_SPACE,
+                                    CHARACTER_NBSP_TEXT)
     // <BOM>
-    try_match_text_and_return_token(input_p, TOKEN_LEXICAL_WHITE_SPACE, "\uFEFF")
+    try_match_text_and_return_token(input_p, TOKEN_LEXICAL_WHITE_SPACE,
+                                    CHARACTER_BOM_TEXT)
     // <USP>
     try_match_and_return_token(input_p, TOKEN_LEXICAL_WHITE_SPACE,
                                usp_match(input_p))
