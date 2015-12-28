@@ -44,17 +44,16 @@ gboolean token_consume_free_recursive(GPtrArray *input, gsize *position_p) {
     }
 }
 
-gboolean token_get_is_first_punctuator_with_id(GPtrArray *input,
-                                               gsize position,
-                                               punctuator_id_t punctuator_id) {
+gboolean token_is_first_punctuator(GPtrArray *input, gsize position,
+                                   punctuator_id_t punctuator_id) {
     token_t *token;
     return token_get(input, position, &token)
            && punctuator_is_punctuator_with_id(token, punctuator_id);
 }
 
-gboolean token_get_consume_free_punctuator_with_id(GPtrArray *input,
-        gsize *position_p, punctuator_id_t punctuator_id) {
-    return token_get_is_first_punctuator_with_id(input, *position_p,
-                                                 punctuator_id)
+gboolean token_match_free_punctuator(GPtrArray *input, gsize *position_p,
+                                     punctuator_id_t punctuator_id) {
+    return token_is_first_punctuator(input, *position_p,
+                                     punctuator_id)
            && token_consume_free(input, position_p);
 }

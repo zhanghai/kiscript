@@ -56,14 +56,14 @@ token_t *block(GPtrArray *input, gsize *position_p) {
 
     token_t *token;
     do {
-        if (token_get_consume_free_punctuator_with_id(input, position_p,
-                PUNCTUATOR_CURLY_BRACE_LEFT)) {
+        if (token_match_free_punctuator(input, position_p,
+                                        PUNCTUATOR_CURLY_BRACE_LEFT)) {
             token_t *statement_list_token = NULL;
-            if (!token_get_consume_free_punctuator_with_id(input,
-                    position_p, PUNCTUATOR_CURLY_BRACE_RIGHT)) {
+            if (!token_match_free_punctuator(input, position_p,
+                                             PUNCTUATOR_CURLY_BRACE_RIGHT)) {
                 statement_list_token = statement_list(input, position_p);
-                if (!token_get_consume_free_punctuator_with_id(input,
-                        position_p, PUNCTUATOR_CURLY_BRACE_RIGHT)) {
+                if (!token_match_free_punctuator(input, position_p,
+                        PUNCTUATOR_CURLY_BRACE_RIGHT)) {
                     break;
                 }
             }
