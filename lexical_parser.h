@@ -34,6 +34,8 @@ token_t *token(gchar **input_p);
 
 token_t *identifier(gchar **input_p);
 
+gboolean identifier_name_is_first(gchar *input);
+
 token_t *identifier_name(gchar **input_p);
 
 gboolean punctuator_is_first(gchar *input);
@@ -52,9 +54,15 @@ token_t *boolean_literal(gchar **input_p);
 
 gboolean boolean_literal_is_match(gchar *input);
 
+gboolean numeric_literal_is_first(gchar *input);
+
 token_t *numeric_literal(gchar **input_p);
 
 gdouble *numeric_literal_get_value(token_t *token);
+
+gboolean string_literal_is_first(gchar *input);
+
+token_t *string_literal(gchar **input_p);
 
 gboolean unicode_escape_sequence_match_save_value(gchar **input_p,
                                                   GString *buffer);

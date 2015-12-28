@@ -517,7 +517,20 @@ token_t *single_line_comment(gchar **input_p) {
  */
 token_t *token(gchar **input_p) {
 
-    // TODO
+    if (identifier_name_is_first(*input_p)) {
+        // TODO: Wrap as child
+        return identifier_name(input_p);
+    }
+    if (punctuator_is_first(*input_p)) {
+        // TODO: Wrap as child
+        return punctuator(input_p);
+    }
+    if (numeric_literal_is_first(*input_p)) {
+        return numeric_literal(input_p);
+    }
+    if (string_literal_is_first(*input_p)) {
+        return string_literal(input_p);
+    }
 
     // TODO: Error!
     return NULL;
@@ -744,6 +757,10 @@ static gboolean identifier_part_match_save_value(gchar **input_p,
 static DEFINE_MATCH_ANY_SAVE_FUNC(identifier_part_match_any_save_value,
                                   identifier_part_match_save_value)
 
+gboolean identifier_name_is_first(gchar *input) {
+    return identifier_start_is_first(input);
+}
+
 /*
  * IdentifierName ::
  *     IdentifierStart IdentifierPart*
@@ -937,6 +954,10 @@ static gdouble *number_new_parse_integer(gchar *input, gchar *input_end,
         errno = 0;
     }
     return value_p;
+}
+
+static gboolean decimal_digit_is_first(gchar *input) {
+    return chars_is_first(input, "0123456789");
 }
 
 static gboolean decimal_digit_match(gchar **input_p) {
@@ -1179,6 +1200,12 @@ token_t *numeric_literal(gchar **input_p) {
     return NULL;
 }
 
+gboolean numeric_literal_is_first(gchar *input) {
+    // NOTE: Includes BinaryIntegerLiteral, OctalIntegerLiteral and
+    // HexIntegerLiteral.
+    return decimal_digit_is_first(input);
+}
+
 gdouble *numeric_literal_get_value(token_t *token) {
     g_assert(token->id == TOKEN_LEXICAL_NUMERIC_LITERAL);
     return (gdouble *) token->data;
@@ -1201,27 +1228,7 @@ static gboolean hex_escape_sequence_match_save_value(gchar **input_p,
     return FALSE;
 }
 
-gboolean unicode_escape_sequence_match_save_value(gchar **input_p,
-                                                  GString *buffer) {
-
-    gchar *input_old = *input_p;
-    guint digit[4];
-    if (char_match(input_p, 'u') && hex_digit_match_save(input_p, &digit[0])
-        && hex_digit_match_save_value(input_p, &digit[1])
-        && hex_digit_match_save_value(input_p, &digit[2])
-        && hex_digit_match_save_value(input_p, &digit[3])) {
-        gunichar char0 = 4096 * digit[0] + 256 * digit[1] + 16 * digit[2]
-                         + digit[3];
-        g_string_append_unichar(buffer, char0);
-        return TRUE;
-    }
-
-    // BACKTRACK!
-    *input_p = input_old;
-    return FALSE;
-}
-
-gboolean string_character_match_save(gchar **input_p, gchar quote,
+static gboolean string_character_match_save(gchar **input_p, gchar quote,
                                      GString *buffer) {
     if (char_is_first(*input_p, quote) || line_terminator_is_first(*input_p)) {
         return FALSE;
@@ -1238,7 +1245,7 @@ gboolean string_character_match_save(gchar **input_p, gchar quote,
             // HexEscapeSequence
             // UnicodeEscapeSequence
             if (char_match_save(input_p, '\'', buffer)
-                || char_match_save(input_p, '\"', buffer)
+                || char_match_save(input_p, '"', buffer)
                 || char_match_save(input_p, '\\', buffer)
                 || char_match_save_other(input_p, 'b', buffer, '\u0008')
                 || char_match_save_other(input_p, 'f', buffer, '\u000C')
@@ -1261,6 +1268,10 @@ gboolean string_character_match_save(gchar **input_p, gchar quote,
         char_consume_save(input_p, buffer);
         return TRUE;
     }
+}
+
+gboolean string_literal_is_first(gchar *input) {
+    return char_is_first(input, '"') || char_is_first(input, '\'');
 }
 
 /*
@@ -1308,8 +1319,8 @@ token_t *string_literal(gchar **input_p) {
         gchar quote;
         if (char_match(input_p, '\'')) {
             quote = '\'';
-        } else if (char_match(input_p, '\"')) {
-            quote = '\"';
+        } else if (char_match(input_p, '"')) {
+            quote = '"';
         } else {
             break;
         }
@@ -1325,4 +1336,24 @@ token_t *string_literal(gchar **input_p) {
 
     // TODO: Error!
     return NULL;
+}
+
+gboolean unicode_escape_sequence_match_save_value(gchar **input_p,
+                                                  GString *buffer) {
+
+    gchar *input_old = *input_p;
+    guint digit[4];
+    if (char_match(input_p, 'u') && hex_digit_match_save(input_p, &digit[0])
+        && hex_digit_match_save_value(input_p, &digit[1])
+        && hex_digit_match_save_value(input_p, &digit[2])
+        && hex_digit_match_save_value(input_p, &digit[3])) {
+        gunichar char0 = 4096 * digit[0] + 256 * digit[1] + 16 * digit[2]
+                         + digit[3];
+        g_string_append_unichar(buffer, char0);
+        return TRUE;
+    }
+
+    // BACKTRACK!
+    *input_p = input_old;
+    return FALSE;
 }
