@@ -10,6 +10,8 @@
 
 token_t * input_element_div(gchar **input_p);
 
+gboolean white_space_is_first(gchar *input);
+
 token_t * white_space(gchar **input_p);
 
 gboolean line_terminator_is_first(gchar *input);
@@ -29,6 +31,8 @@ token_t *multi_line_comment(gchar **input_p);
 gboolean single_line_comment_is_first(gchar *input);
 
 token_t *single_line_comment(gchar **input_p);
+
+gboolean token_is_first(gchar *input);
 
 token_t *token(gchar **input_p);
 

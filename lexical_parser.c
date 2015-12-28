@@ -221,12 +221,30 @@ gboolean text_is_match(gchar *input, gchar *text) {
  *     DivPunctuator
  */
 token_t *input_element_div(gchar **input_p) {
-    // TODO
-    white_space(input_p);
-    line_terminator(input_p);
-    comment(input_p);
-    token(input_p);
-    div_punctuator(input_p);
+
+    if (white_space_is_first(*input_p)) {
+        // TODO: Wrap as child!
+        return white_space(input_p);
+    }
+    if (line_terminator_is_first(*input_p)) {
+        // TODO: Wrap as child!
+        return line_terminator(input_p);
+    }
+    if (comment_is_first(*input_p)) {
+        // TODO: Wrap as child!
+        return comment(input_p);
+    }
+    if (token_is_first(*input_p)) {
+        // TODO: Wrap as child!
+        return token(input_p);
+    }
+    if (div_punctuator_is_first(*input_p)) {
+        // TODO: Wrap as child!
+        return div_punctuator(input_p);
+    }
+
+    // TODO: Error!
+    return NULL;
 }
 
 static gboolean usp_is_first(gchar *input) {
@@ -392,12 +410,12 @@ token_t *comment(gchar **input_p) {
 
     // MultiLineComment
     if (multi_line_comment_is_first(*input_p)) {
-        // TODO: Wrap as children!
+        // TODO: Wrap as child!
         return multi_line_comment(input_p);
     }
     // SingleLineComment
     if (single_line_comment_is_first(*input_p)) {
-        // TODO: Wrap as children!
+        // TODO: Wrap as child!
         return single_line_comment(input_p);
     }
 
@@ -508,6 +526,11 @@ token_t *single_line_comment(gchar **input_p) {
     return NULL;
 }
 
+gboolean token_is_first(gchar *input) {
+    return identifier_name_is_first(input) || punctuator_is_first(input)
+           || numeric_literal_is_first(input) || string_literal_is_first(input);
+}
+
 /*
  * Token ::
  *     IdentifierName
@@ -518,17 +541,19 @@ token_t *single_line_comment(gchar **input_p) {
 token_t *token(gchar **input_p) {
 
     if (identifier_name_is_first(*input_p)) {
-        // TODO: Wrap as child
+        // TODO: Wrap as child!
         return identifier_name(input_p);
     }
     if (punctuator_is_first(*input_p)) {
-        // TODO: Wrap as child
+        // TODO: Wrap as child!
         return punctuator(input_p);
     }
     if (numeric_literal_is_first(*input_p)) {
+        // TODO: Wrap as child!
         return numeric_literal(input_p);
     }
     if (string_literal_is_first(*input_p)) {
+        // TODO: Wrap as child!
         return string_literal(input_p);
     }
 
