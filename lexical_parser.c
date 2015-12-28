@@ -8,12 +8,12 @@
 #include <string.h>
 #include <errno.h>
 
-gboolean text_is_match(gchar *input, gchar *text) {
-    return g_strcmp0(input, text) == 0;
-}
-
 gboolean char_is_first(gchar *input, gchar char0) {
     return input[0] == char0;
+}
+
+gboolean char_is_match(gunichar input, gchar char0) {
+    return input == char0;
 }
 
 void char_consume(gchar **input_p) {
@@ -21,9 +21,52 @@ void char_consume(gchar **input_p) {
     *input_p = g_utf8_next_char(*input_p);
 }
 
+void char_consume_save_char(gchar **input_p, gunichar *char_p) {
+    *char_p = g_utf8_get_char(*input_p);
+    char_consume(input_p);
+}
+
+void char_consume_save_other(gchar **input_p, GString *buffer, gunichar char0) {
+    g_string_append_unichar(buffer, char0);
+    char_consume(input_p);
+}
+
+void char_consume_save(gchar **input_p, GString *buffer) {
+    g_string_append_unichar(buffer, g_utf8_get_char(*input_p));
+    char_consume(input_p);
+}
+
 gboolean char_match(gchar **input_p, gchar char0) {
     if (char_is_first(*input_p, char0)) {
         char_consume(input_p);
+        return TRUE;
+    } else {
+        return FALSE;
+    }
+}
+
+gboolean char_match_save_char(gchar **input_p, gchar char0, gunichar *char_p) {
+    if (char_is_first(*input_p, char0)) {
+        char_consume_save_char(input_p, char_p);
+        return TRUE;
+    } else {
+        return FALSE;
+    }
+}
+
+gboolean char_match_save_other(gchar **input_p, gchar char0,
+                               GString *buffer, gunichar char1) {
+    if (char_is_first(*input_p, char0)) {
+        char_consume_save_other(input_p, buffer, char1);
+        return TRUE;
+    } else {
+        return FALSE;
+    }
+}
+
+gboolean char_match_save(gchar **input_p, gchar char0, GString *buffer) {
+    if (char_is_first(*input_p, char0)) {
+        char_consume_save(input_p, buffer);
         return TRUE;
     } else {
         return FALSE;
@@ -39,7 +82,7 @@ gboolean char_match_not(gchar **input_p, gchar char0) {
     }
 }
 
-gboolean char2_match_not2(gchar **input_p, gchar char0, gchar char1) {
+gboolean char_match_not_2(gchar **input_p, gchar char0, gchar char1) {
     if (!char_is_first(*input_p, char0) && !char_is_first(*input_p, char1)) {
         char_consume(input_p);
         return TRUE;
@@ -48,9 +91,37 @@ gboolean char2_match_not2(gchar **input_p, gchar char0, gchar char1) {
     }
 }
 
-gboolean chars_match(gchar **input_p, gchar *chars) {
+gboolean chars_is_first(gchar *input, gchar *chars) {
     for (gchar *char_p = chars; *char_p; ++char_p) {
-        if (char_match(input_p, *char_p)) {
+        if (char_is_first(input, *char_p)) {
+            return TRUE;
+        }
+    }
+    return FALSE;
+}
+
+gboolean chars_match(gchar **input_p, gchar *chars) {
+    if (chars_is_first(*input_p, chars)) {
+        char_consume(input_p);
+        return TRUE;
+    } else {
+        return FALSE;
+    }
+}
+
+gboolean chars_match_save_char(gchar **input_p, gchar *chars,
+                               gunichar *char_p) {
+    if (chars_is_first(*input_p, chars)) {
+        char_consume_save_char(input_p, char_p);
+        return TRUE;
+    } else {
+        return FALSE;
+    }
+}
+
+gboolean chars_is_match(gunichar input, gchar *chars) {
+    for (gchar *char_p = chars; *char_p; ++char_p) {
+        if (char_is_match(input, *char_p)) {
             return TRUE;
         }
     }
@@ -65,6 +136,12 @@ void text_consume(gchar **input_p, gchar *text) {
     *input_p += strlen(text);
 }
 
+void text_consume_save(gchar **input_p, gchar *text, GString *buffer) {
+    gsize text_length = strlen(text);
+    g_string_append_len(buffer, *input_p, text_length);
+    *input_p += text_length;
+}
+
 gboolean text_match(gchar **input_p, gchar *text) {
     if (text_is_first(*input_p, text)) {
         text_consume(input_p, text);
@@ -74,15 +151,43 @@ gboolean text_match(gchar **input_p, gchar *text) {
     }
 }
 
+gboolean text_match_save(gchar **input_p, gchar *text, GString *buffer) {
+    if (text_is_first(*input_p, text)) {
+        text_consume_save(input_p, text, buffer);
+        return TRUE;
+    } else {
+        return FALSE;
+    }
+}
+
+gboolean text_is_match(gchar *input, gchar *text) {
+    return g_strcmp0(input, text) == 0;
+}
+
 #define DEFINE_MATCH_ANY_FUNC(match_func) \
     void match_func##_any(gchar **input_p) { \
         while (match_func(input_p)) {} \
+    }
+
+#define DEFINE_MATCH_ANY_SAVE_FUNC(match_func_name, match_func) \
+    void match_func_name(gchar **input_p, GString *buffer) { \
+        while (match_func(input_p, buffer)) {} \
     }
 
 #define DEFINE_MATCH_MULTIPLE_FUNC(match_func) \
     gboolean match_func##_multiple(gchar **input_p) { \
         if (match_func(input_p)) { \
             while (match_func(input_p)) {} \
+            return TRUE; \
+        } else { \
+            return FALSE; \
+        } \
+    }
+
+#define DEFINE_MATCH_MULTIPLE_SAVE_FUNC(match_func_name, match_func) \
+    gboolean match_func_name(gchar **input_p, GString *buffer) { \
+        if (match_func(input_p, buffer)) { \
+            while (match_func(input_p, buffer)) {} \
             return TRUE; \
         } else { \
             return FALSE; \
@@ -234,6 +339,14 @@ token_t *line_terminator(gchar **input_p) {
     return NULL;
 }
 
+static gboolean line_terminator_sequence_match(gchar **input_p) {
+    return char_match(input_p, CHARACTER_LF_CHAR)
+           || text_match(input_p, TEXT_CR_LF)
+           || char_match(input_p, CHARACTER_CR_CHAR)
+           || text_match(input_p, CHARACTER_LS_TEXT)
+           || text_match(input_p, CHARACTER_PS_TEXT);
+}
+
 /*
  * LineTerminatorSequence ::
  *     <LF>
@@ -319,7 +432,7 @@ static gboolean multi_line_comment_chars_match(gchar **input_p) {
 }
 
 static gboolean post_asterisk_comment_chars_match(gchar **input_p) {
-    if (char2_match_not2(input_p, '/', '*')) {
+    if (char_match_not_2(input_p, '/', '*')) {
         // MultiLineNotForwardSlashOrAsteriskChar MultiLineCommentChars?
         multi_line_comment_chars_match(input_p);
         return TRUE;
@@ -524,9 +637,9 @@ static gboolean unicode_letter_is_first(gchar *input) {
  *             “Modifier letter (Lm)”, “Other letter (Lo)”, or
  *             “Letter number (Nl)”.
  */
-static gboolean unicode_letter_match(gchar **input_p) {
+static gboolean unicode_letter_match_save(gchar **input_p, GString *buffer) {
     if (unicode_letter_is_first(*input_p)) {
-        char_consume(input_p);
+        char_consume_save(input_p, buffer);
         return TRUE;
     } else {
         return FALSE;
@@ -545,16 +658,18 @@ static gboolean identifier_start_is_first(gchar *input) {
  *     _
  *     \ UnicodeEscapeSequence
  */
-static gboolean identifier_start_match(gchar **input_p) {
-    gboolean matched = unicode_letter_match(input_p) || char_match(input_p, '$')
-                       || char_match(input_p, '_');
+static gboolean identifier_start_match_save_value(gchar **input_p,
+                                                  GString *buffer) {
+    gboolean matched = unicode_letter_match_save(input_p, buffer)
+                       || char_match_save(input_p, '$', buffer)
+                       || char_match_save(input_p, '_', buffer);
     if (matched) {
         return TRUE;
     } else {
         // \ UnicodeEscapeSequence
         gchar *input_old = *input_p;
         if (char_match(input_p, '\\')
-            && unicode_escape_sequence_match(input_p)) {
+            && unicode_escape_sequence_match_save_value(input_p, buffer)) {
             return TRUE;
         } else {
             // BACKTRACK!
@@ -569,11 +684,12 @@ static gboolean identifier_start_match(gchar **input_p) {
  *     any character in the Unicode categories “Non-spacing mark (Mn)” or
  *     “Combining spacing mark (Mc)”
  */
-static gboolean unicode_combining_mark_match(gchar **input_p) {
+static gboolean unicode_combining_mark_match_save(gchar **input_p,
+                                                  GString *buffer) {
     switch (g_unichar_type(g_utf8_get_char(*input_p))) {
         case G_UNICODE_NON_SPACING_MARK:
         case G_UNICODE_SPACING_MARK:
-            char_consume(input_p);
+            char_consume_save(input_p, buffer);
             return TRUE;
         default:
             return FALSE;
@@ -584,9 +700,9 @@ static gboolean unicode_combining_mark_match(gchar **input_p) {
  * UnicodeDigit ::
  *     any character in the Unicode category “Decimal number (Nd)”
  */
-static gboolean unicode_digit_match(gchar **input_p) {
+static gboolean unicode_digit_match_save(gchar **input_p, GString *buffer) {
     if (g_unichar_type(g_utf8_get_char(*input_p)) == G_UNICODE_DECIMAL_NUMBER) {
-        char_consume(input_p);
+        char_consume_save(input_p, buffer);
         return TRUE;
     } else {
         return FALSE;
@@ -597,10 +713,11 @@ static gboolean unicode_digit_match(gchar **input_p) {
  * UnicodeConnectorPunctuation ::
  *     any character in the Unicode category “Connector punctuation (Pc)”
  */
-static gboolean unicode_connector_punctuation_match(gchar **input_p) {
+static gboolean unicode_connector_punctuation_match_save(gchar **input_p,
+                                                         GString *buffer) {
     if (g_unichar_type(g_utf8_get_char(*input_p)) ==
             G_UNICODE_CONNECT_PUNCTUATION) {
-        char_consume(input_p);
+        char_consume_save(input_p, buffer);
         return TRUE;
     } else {
         return FALSE;
@@ -619,34 +736,35 @@ static gboolean unicode_connector_punctuation_match(gchar **input_p) {
  *     <ZWNJ>
  *     <ZWJ>
  */
-static gboolean identifier_part_match(gchar **input_p) {
-    return identifier_start_match(input_p)
-           || unicode_combining_mark_match(input_p)
-           || unicode_digit_match(input_p)
-           || unicode_connector_punctuation_match(input_p)
-           || text_match(input_p, CHARACTER_ZWNJ_TEXT)
-           || text_match(input_p, CHARACTER_ZWJ_TEXT);
+static gboolean identifier_part_match_save_value(gchar **input_p,
+                                                 GString *buffer) {
+    return identifier_start_match_save_value(input_p, buffer)
+           || unicode_combining_mark_match_save(input_p, buffer)
+           || unicode_digit_match_save(input_p, buffer)
+           || unicode_connector_punctuation_match_save(input_p, buffer)
+           || text_match_save(input_p, CHARACTER_ZWNJ_TEXT, buffer)
+           || text_match_save(input_p, CHARACTER_ZWJ_TEXT, buffer);
 }
 
-static DEFINE_MATCH_ANY_FUNC(identifier_part_match)
+static DEFINE_MATCH_ANY_SAVE_FUNC(identifier_part_match_any_save_value,
+                                  identifier_part_match_save_value)
 
 /*
  * IdentifierName ::
- *     IdentifierStart
- *     IdentifierName IdentifierPart
+ *     IdentifierStart IdentifierPart*
  */
 token_t *identifier_name(gchar **input_p) {
 
     gchar *input_old = *input_p;
-
-    // IdentifierStart IdentifierPart*
-    if (identifier_start_match(input_p)) {
-        identifier_part_match_any(input_p);
-        return token_new_strndup_no_data(TOKEN_LEXICAL_IDENTIFIER_NAME,
-                                         input_old, *input_p);
+    GString *string = g_string_new(NULL);
+    if (identifier_start_match_save_value(input_p, string)) {
+        identifier_part_match_any_save_value(input_p, string);
+        return token_new_strndup_gstring(TOKEN_LEXICAL_IDENTIFIER_NAME,
+                                         input_old, *input_p, string);
     }
 
     // TODO: Error!
+    g_string_free(string, TRUE);
     return NULL;
 }
 
@@ -950,8 +1068,41 @@ static gboolean hex_integer_is_first(gchar *input) {
            || text_is_first(input, TEXT_HEX_INTEGER_PREFIX_2);
 }
 
+#define CHARACTERS_HEX_DIGITS_CHARS "0123456789abcdefABCDEF"
+
 static gboolean hex_digit_match(gchar **input_p) {
-    return chars_match(input_p, "0123456789abcdefABCDEF");
+    return chars_match(input_p, CHARACTERS_HEX_DIGITS_CHARS);
+}
+
+static gboolean hex_digit_match_save(gchar **input_p, gunichar *char_p) {
+    return chars_match_save_char(input_p, CHARACTERS_HEX_DIGITS_CHARS, char_p);
+}
+
+static guint hex_digit_to_value(gunichar char0) {
+
+    g_assert(chars_is_match(char0, CHARACTERS_HEX_DIGITS_CHARS));
+    if (char0 >= '0' && char0 <= '9') {
+        return (guint) char0 - '0';
+    }
+    if (char0 >= 'a' && char0 <= 'f') {
+        return (guint) char0 - 'a' + 10;
+    }
+    if (char0 >= 'A' && char0 <= 'F') {
+        return (guint) char0 - 'A' + 10;
+    }
+
+    // TODO: Error!
+    return 16;
+}
+
+static gboolean hex_digit_match_save_value(gchar **input_p, guint *value_p) {
+    gunichar char0;
+    if (hex_digit_match_save(input_p, &char0)) {
+        *value_p = hex_digit_to_value(char0);
+        return TRUE;
+    } else {
+        return FALSE;
+    }
 }
 
 static DEFINE_MATCH_MULTIPLE_FUNC(hex_digit_match)
@@ -995,7 +1146,7 @@ token_t *numeric_literal(gchar **input_p) {
 
     token_t *token;
     if (binary_integer_is_first(*input_p)) {
-        token = hex_integer_literal(input_p);
+        token = binary_integer_literal(input_p);
     } else if (octal_integer_is_first(*input_p)) {
         token = octal_integer_literal(input_p);
     } else if (hex_integer_is_first(*input_p)) {
@@ -1003,13 +1154,12 @@ token_t *numeric_literal(gchar **input_p) {
     } else {
         token = decimal_literal(input_p);
     }
-
     if (!identifier_start_is_first(*input_p)) {
         return token;
-    } else {
-        // Error!
-        return NULL;
     }
+
+    // Error!
+    return NULL;
 }
 
 gdouble *numeric_literal_get_value(token_t *token) {
@@ -1017,7 +1167,145 @@ gdouble *numeric_literal_get_value(token_t *token) {
     return (gdouble *) token->data;
 }
 
-gboolean unicode_escape_sequence_match(gchar **input_p) {
-    // TODO
+static gboolean hex_escape_sequence_match_save_value(gchar **input_p,
+                                                     GString *buffer) {
+
+    gchar *input_old = *input_p;
+    guint digit[2];
+    if (char_match(input_p, 'x') && hex_digit_match_save(input_p, &digit[0])
+        && hex_digit_match_save_value(input_p, &digit[1])) {
+        gunichar char0 = 16 * digit[0] + digit[1];
+        g_string_append_unichar(buffer, char0);
+        return TRUE;
+    }
+
+    // BACKTRACK!
+    *input_p = input_old;
     return FALSE;
+}
+
+gboolean unicode_escape_sequence_match_save_value(gchar **input_p,
+                                                  GString *buffer) {
+
+    gchar *input_old = *input_p;
+    guint digit[4];
+    if (char_match(input_p, 'u') && hex_digit_match_save(input_p, &digit[0])
+        && hex_digit_match_save_value(input_p, &digit[1])
+        && hex_digit_match_save_value(input_p, &digit[2])
+        && hex_digit_match_save_value(input_p, &digit[3])) {
+        gunichar char0 = 4096 * digit[0] + 256 * digit[1] + 16 * digit[2]
+                         + digit[3];
+        g_string_append_unichar(buffer, char0);
+        return TRUE;
+    }
+
+    // BACKTRACK!
+    *input_p = input_old;
+    return FALSE;
+}
+
+gboolean string_character_match_save(gchar **input_p, gchar quote,
+                                     GString *buffer) {
+    if (char_is_first(*input_p, quote) || line_terminator_is_first(*input_p)) {
+        return FALSE;
+    }
+    // \ LineTerminatorSequence
+    // \ EscapeSequence
+    if (char_match(input_p, '\\')) {
+        // LineTerminatorSequence
+        if (line_terminator_sequence_match(input_p)) {
+            return TRUE;
+        } else {
+            // SingleEscapeCharacter
+            // 0
+            // HexEscapeSequence
+            // UnicodeEscapeSequence
+            if (char_match_save(input_p, '\'', buffer)
+                || char_match_save(input_p, '\"', buffer)
+                || char_match_save(input_p, '\\', buffer)
+                || char_match_save_other(input_p, 'b', buffer, '\u0008')
+                || char_match_save_other(input_p, 'f', buffer, '\u000C')
+                || char_match_save_other(input_p, 'n', buffer, '\u000A')
+                || char_match_save_other(input_p, 'r', buffer, '\u000D')
+                || char_match_save_other(input_p, 't', buffer, '\u0009')
+                || char_match_save_other(input_p, 'v', buffer, '\u000B')
+                || char_match_save_other(input_p, '0', buffer, '\0')
+                || hex_escape_sequence_match_save_value(input_p, buffer)
+                || unicode_escape_sequence_match_save_value(input_p, buffer)) {
+                return TRUE;
+            // NonEscapeCharacter
+            } else {
+                char_consume_save(input_p, buffer);
+                return TRUE;
+            }
+        }
+    } else {
+        // SourceCharacter but not one of `quote` or \ or LineTerminator
+        char_consume_save(input_p, buffer);
+        return TRUE;
+    }
+}
+
+/*
+ * StringLiteral ::
+ *     " DoubleStringCharacter+ "
+ *     ' SingleStringCharacter+ '
+ * DoubleStringCharacter ::
+ *     SourceCharacter but not one of " or \ or LineTerminator
+ *     \ EscapeSequence
+ *     \ LineTerminatorSequence
+ * SingleStringCharacter ::
+ *     SourceCharacter but not one of ' or \ or LineTerminator
+ *     \ EscapeSequence
+ *     \ LineTerminatorSequence
+ * EscapeSequence ::
+ *     CharacterEscapeSequence
+ * // NONSTANDARD
+ *     0
+ * // STANDARD
+ *     0 [lookahead ∉ DecimalDigit]
+ *     x HexDigit HexDigit
+ *     u HexDigit HexDigit HexDigit HexDigit
+ * CharacterEscapeSequence ::
+ *     SingleEscapeCharacter
+ *     NonEscapeCharacter
+ * SingleEscapeCharacter :: one of
+ *     ' " \ b f n r t v
+ * NonEscapeCharacter ::
+ *     SourceCharacter but not one of EscapeCharacter or LineTerminator
+ * EscapeCharacter ::
+ *     SingleEscapeCharacter
+ * // NONSTANDARD
+ *     0
+ * // STANDARD
+ *     DecimalDigit
+ *     x
+ *     u
+ */
+token_t *string_literal(gchar **input_p) {
+
+    do {
+
+        gchar *input_old = *input_p;
+
+        gchar quote;
+        if (char_match(input_p, '\'')) {
+            quote = '\'';
+        } else if (char_match(input_p, '\"')) {
+            quote = '\"';
+        } else {
+            break;
+        }
+
+        GString *string = g_string_new(NULL);
+        if (string_character_match_save(input_p, quote, string)
+            && char_match(input_p, quote)) {
+            return token_new_strndup_gstring(TOKEN_LEXICAL_STRING_LITERAL,
+                                             input_old, *input_p, string);
+        }
+        g_string_free(string, TRUE);
+    } while (FALSE);
+
+    // TODO: Error!
+    return NULL;
 }

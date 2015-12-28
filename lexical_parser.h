@@ -56,6 +56,7 @@ token_t *numeric_literal(gchar **input_p);
 
 gdouble *numeric_literal_get_value(token_t *token);
 
-gboolean unicode_escape_sequence_match(gchar **input_p);
+gboolean unicode_escape_sequence_match_save_value(gchar **input_p,
+                                                  GString *buffer);
 
 #endif //KISCRIPT_LEXICAL_PARSER_H

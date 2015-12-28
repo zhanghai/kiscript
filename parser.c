@@ -27,6 +27,16 @@ token_t *token_new_strndup(token_id_t id, gchar *text, gchar *text_end,
                      data_free_func);
 }
 
+static void token_data_free_gstring(gpointer string) {
+    g_string_free((GString *) string, TRUE);
+}
+
+token_t *token_new_strndup_gstring(token_id_t id, gchar *text, gchar *text_end,
+                                   GString *string) {
+    return token_new_strndup(id, text, text_end, string,
+                             token_data_free_gstring);
+}
+
 token_t *token_new_no_data(token_id_t id, gchar *text) {
     return token_new(id, text, NULL, NULL);
 }
