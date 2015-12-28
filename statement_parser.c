@@ -47,10 +47,24 @@ token_t *block(GPtrArray *input, gsize *position_p) {
     token_t *token;
     if (token_get(input, *position_p, &token)
         && punctuator_is_punctuator_with_id(token,
-                                            PUNCTUATOR_CURLY_BRACE_LEFT)) {
-        token_consume_free(input, position_p);
-        
+                                            PUNCTUATOR_CURLY_BRACE_LEFT)
+        && token_consume_free(input, position_p)) {
+        token_t *statement_list_token = statement_list(input, position_p);
+        if (token_get(input, *position_p, &token)
+            && punctuator_is_punctuator_with_id(token,
+                                                PUNCTUATOR_CURLY_BRACE_RIGHT)
+            && token_consume_free(input, position_p)) {
+
+        }
     }
+
+    // TODO: Error!
+    return NULL;
+}
+
+token_t *statement_list(GPtrArray *input, gsize *position_p) {
+
+    // TODO
 
     // TODO: Error!
     return NULL;

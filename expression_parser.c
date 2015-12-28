@@ -38,13 +38,13 @@ token_t *primary_expression(GPtrArray *input, gsize *position_p) {
         return_token_if_is_first(input, position_p, array_literal)
         return_token_if_is_first(input, position_p, object_literal)
         if (punctuator_is_punctuator_with_id(token,
-                                             PUNCTUATOR_PARENTHESIS_LEFT)) {
-            token_consume_free(input, position_p);
+                                             PUNCTUATOR_PARENTHESIS_LEFT)
+            && token_consume_free(input, position_p)) {
             token_t *expression_token = expression(input, position_p);
             if (token_get(input, *position_p, &token)
                 && punctuator_is_punctuator_with_id(token,
-                        PUNCTUATOR_PARENTHESIS_RIGHT)) {
-                token_consume_free(input, position_p);
+                        PUNCTUATOR_PARENTHESIS_RIGHT)
+                && token_consume_free(input, position_p)) {
                 return expression_token;
             }
         }
