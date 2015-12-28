@@ -35,12 +35,8 @@ token_t *primary_expression(GPtrArray *input, gsize *position_p) {
             || token->id == TOKEN_LEXICAL_STRING_LITERAL) {
             return token;
         }
-        if (array_literal_is_first(input, *position_p)) {
-            return array_literal(input, position_p);
-        }
-        if (object_literal_is_first(input, *position_p)) {
-            return object_literal(input, position_p);
-        }
+        return_token_if_is_first(input, position_p, array_literal)
+        return_token_if_is_first(input, position_p, object_literal)
         if (punctuator_is_punctuator_with_id(token,
                                              PUNCTUATOR_PARENTHESIS_LEFT)) {
             token_consume_free(input, position_p);

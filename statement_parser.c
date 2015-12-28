@@ -8,6 +8,24 @@
 #include "lexical_parser.h"
 #include "syntactic_parser_utils.h"
 
+/*
+ * Statement :
+ *     Block
+ *     VariableStatement
+ *     EmptyStatement
+ *     ExpressionStatement
+ *     IfStatement
+ *     IterationStatement
+ *     ContinueStatement
+ *     BreakStatement
+ *     ReturnStatement
+ *     WithStatement
+ *     LabelledStatement
+ *     SwitchStatement
+ *     ThrowStatement
+ *     TryStatement
+ *     DebuggerStatement
+ */
 token_t *statement(GPtrArray *input, gsize *position_p) {
 
     // TODO

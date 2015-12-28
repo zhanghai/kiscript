@@ -18,4 +18,11 @@ gboolean token_consume(GPtrArray *input, gsize *position_p);
 
 gboolean token_consume_free_recursive(GPtrArray *input, gsize *position_p);
 
+
+#define return_token_if_is_first(input, position_p, token_name) \
+    if (token_name##_is_first((input), *(position_p))) { \
+        return token_name((input), (position_p));\
+    }
+
+
 #endif //KISCRIPT_SYNTACTIC_PARSER_UTILS_H
