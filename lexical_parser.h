@@ -34,6 +34,8 @@ gboolean token_is_first(gchar *input);
 
 token_t *token(gchar **input_p);
 
+gboolean identifier_part_is_first(gchar *input);
+
 gboolean identifier_name_is_first(gchar *input);
 
 token_t *identifier_name(gchar **input_p);

@@ -34,11 +34,14 @@ GPtrArray *lexical_token_list(gchar **input_p) {
  */
 token_t *lexical_token(gchar **input_p) {
 
-    return_token_if_is_first(input_p, identifier_name)
     return_token_if_is_first(input_p, keyword)
     return_token_if_is_first(input_p, future_reserved_word)
     return_token_if_is_first(input_p, null_literal)
     return_token_if_is_first(input_p, boolean_literal)
+    // NOTE:
+    // {keyword,future_reserved_word,null_literal,boolean_literal}_is_first
+    // checks identifier_part_is_first().
+    return_token_if_is_first(input_p, identifier_name)
     return_token_if_is_first(input_p, numeric_literal)
     return_token_if_is_first(input_p, string_literal)
     return_token_if_is_first(input_p, punctuator)
@@ -339,7 +342,8 @@ static char *KEYWORDS[] = {
 };
 
 gboolean keyword_is_first(gchar *input) {
-    return text_array_is_first(input, KEYWORDS, G_N_ELEMENTS(KEYWORDS));
+    return text_array_match(&input, KEYWORDS, G_N_ELEMENTS(KEYWORDS))
+           && !identifier_part_is_first(input);
 }
 
 static DEFINE_ENUM_NEW(keyword_id)
@@ -383,8 +387,9 @@ static char *FUTURE_RESERVED_WORDS[] = {
 };
 
 gboolean future_reserved_word_is_first(gchar *input) {
-    return text_array_is_first(input, FUTURE_RESERVED_WORDS,
-                               G_N_ELEMENTS(FUTURE_RESERVED_WORDS));
+    return text_array_match(&input, FUTURE_RESERVED_WORDS,
+                            G_N_ELEMENTS(FUTURE_RESERVED_WORDS))
+           && !identifier_part_is_first(input);
 }
 
 static DEFINE_ENUM_NEW(future_reserved_word_id)
@@ -480,6 +485,16 @@ static gboolean identifier_start_match_save_value(gchar **input_p,
     }
 }
 
+static gboolean unicode_combining_mark_is_first(gchar *input_p) {
+    switch (g_unichar_type(g_utf8_get_char(input_p))) {
+        case G_UNICODE_NON_SPACING_MARK:
+        case G_UNICODE_SPACING_MARK:
+            return TRUE;
+        default:
+            return FALSE;
+    }
+}
+
 /*
  * UnicodeCombiningMark ::
  *     any character in the Unicode categories “Non-spacing mark (Mn)” or
@@ -487,13 +502,19 @@ static gboolean identifier_start_match_save_value(gchar **input_p,
  */
 static gboolean unicode_combining_mark_match_save(gchar **input_p,
                                                   GString *buffer) {
-    switch (g_unichar_type(g_utf8_get_char(*input_p))) {
-        case G_UNICODE_NON_SPACING_MARK:
-        case G_UNICODE_SPACING_MARK:
-            char_consume_save(input_p, buffer);
-            return TRUE;
-        default:
-            return FALSE;
+    if (unicode_combining_mark_is_first(*input_p)) {
+        char_consume_save(input_p, buffer);
+        return TRUE;
+    } else {
+        return FALSE;
+    }
+}
+
+static gboolean unicode_digit_is_first(gchar *input) {
+    if (g_unichar_type(g_utf8_get_char(input)) == G_UNICODE_DECIMAL_NUMBER) {
+        return TRUE;
+    } else {
+        return FALSE;
     }
 }
 
@@ -502,8 +523,17 @@ static gboolean unicode_combining_mark_match_save(gchar **input_p,
  *     any character in the Unicode category “Decimal number (Nd)”
  */
 static gboolean unicode_digit_match_save(gchar **input_p, GString *buffer) {
-    if (g_unichar_type(g_utf8_get_char(*input_p)) == G_UNICODE_DECIMAL_NUMBER) {
+    if (unicode_digit_is_first(*input_p)) {
         char_consume_save(input_p, buffer);
+        return TRUE;
+    } else {
+        return FALSE;
+    }
+}
+
+static gboolean unicode_connector_punctuation_is_first(gchar *input) {
+    if (g_unichar_type(g_utf8_get_char(input))
+        == G_UNICODE_CONNECT_PUNCTUATION) {
         return TRUE;
     } else {
         return FALSE;
@@ -516,8 +546,7 @@ static gboolean unicode_digit_match_save(gchar **input_p, GString *buffer) {
  */
 static gboolean unicode_connector_punctuation_match_save(gchar **input_p,
                                                          GString *buffer) {
-    if (g_unichar_type(g_utf8_get_char(*input_p)) ==
-            G_UNICODE_CONNECT_PUNCTUATION) {
+    if (unicode_connector_punctuation_is_first(*input_p)) {
         char_consume_save(input_p, buffer);
         return TRUE;
     } else {
@@ -527,6 +556,15 @@ static gboolean unicode_connector_punctuation_match_save(gchar **input_p,
 
 #define CHARACTER_ZWNJ_TEXT "\u200C"
 #define CHARACTER_ZWJ_TEXT "\u200D"
+
+gboolean identifier_part_is_first(gchar *input) {
+    return identifier_start_is_first(input)
+           || unicode_combining_mark_is_first(input)
+           || unicode_digit_is_first(input)
+           || unicode_connector_punctuation_is_first(input)
+           || text_is_first(input, CHARACTER_ZWNJ_TEXT)
+           || text_is_first(input, CHARACTER_ZWJ_TEXT);
+}
 
 /*
  * IdentifierPart ::
@@ -663,7 +701,7 @@ token_t *div_punctuator(gchar **input_p) {
 #define TEXT_NULL "null"
 
 gboolean null_literal_is_first(gchar *input) {
-    return text_is_first(input, TEXT_NULL);
+    return text_match(&input, TEXT_NULL) && !identifier_part_is_first(input);
 }
 
 /*
@@ -693,7 +731,8 @@ gboolean *boolean_new(gboolean value) {
 #define TEXT_FALSE "false"
 
 gboolean boolean_literal_is_first(gchar *input) {
-    return text_is_first(input, TEXT_TRUE) || text_is_first(input, TEXT_FALSE);
+    return (text_match(&input, TEXT_TRUE) || text_match(&input, TEXT_FALSE))
+           && identifier_part_is_first(input);
 }
 
 /*

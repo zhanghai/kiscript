@@ -110,6 +110,9 @@ gboolean text_is_match(gchar *input, gchar *text);
 gboolean text_array_is_first(gchar *input, gchar **text_array,
                              gsize text_array_length);
 
+gboolean text_array_match(gchar **input_p, gchar **text_array,
+                          gsize text_array_length);
+
 gboolean text_array_match_save_index(gchar **input_p, gchar **text_array,
                                      gsize text_array_length, gsize *index_p);
 
