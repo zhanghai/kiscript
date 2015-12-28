@@ -23,7 +23,7 @@ gboolean token_get(GPtrArray *input, gsize position, token_t **token_p) {
     }
 }
 
-gboolean token_consume(GPtrArray *input, gsize *position_p) {
+gboolean token_consume_no_free(GPtrArray *input, gsize *position_p) {
     if (g_ptr_array_in_range(input, *position_p)) {
         ++(*position_p);
         return TRUE;

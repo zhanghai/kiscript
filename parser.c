@@ -6,7 +6,7 @@
 #include "parser.h"
 
 gboolean g_ptr_array_in_range(GPtrArray *array, gsize position) {
-    return position >= 0 && position < array->len;
+    return position < array->len;
 }
 
 
