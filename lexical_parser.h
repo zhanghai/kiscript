@@ -54,13 +54,15 @@ gboolean boolean_literal_is_match(gchar *input);
 
 token_t *numeric_literal(gchar **input_p);
 
-gboolean binary_integer_is_first(gchar *input);
-
-token_t *binary_integer_literal(gchar **input_p);
+gint64 *integer_literal_get_value(token_t *token);
 
 token_t *decimal_literal(gchar **input_p);
 
 token_t *decimal_integer_literal(gchar **input_p);
+
+gboolean binary_integer_is_first(gchar *input);
+
+token_t *binary_integer_literal(gchar **input_p);
 
 gboolean octal_integer_is_first(gchar *input);
 
