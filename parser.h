@@ -30,17 +30,18 @@ typedef struct {
     token_id_t id;
     gchar *text;
     gpointer data;
-    GFreeFunc data_free_func;
+    GDestroyNotify data_free_func;
+    GPtrArray *children;
 } token_t;
 
 void token_init(token_t *token, token_id_t id, gchar *text, gpointer data,
-                GFreeFunc data_free_func);
+                GDestroyNotify data_free_func);
 
 token_t * token_new(token_id_t id, gchar *text, gpointer data,
-                    GFreeFunc data_free_func);
+                    GDestroyNotify data_free_func);
 
 token_t *token_new_strndup(token_id_t id, gchar *text, gchar *text_end,
-                           gpointer data, GFreeFunc data_free_func);
+                           gpointer data, GDestroyNotify data_free_func);
 
 token_t *token_new_strndup_gstring(token_id_t id, gchar *text, gchar *text_end,
                                    GString *string);
@@ -52,7 +53,13 @@ token_t * token_new_strndup_no_data(token_id_t id, gchar *text,
 
 void token_final(token_t *token);
 
+void token_final_recursive(token_t *token);
+
 void token_free(token_t *token);
+
+void token_free_recursive(token_t *token);
+
+void token_append_child(token_t *token, token_t *child);
 
 
 gboolean char_is_first(gchar *input, gchar char0);

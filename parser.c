@@ -8,22 +8,23 @@
 #include <string.h>
 
 void token_init(token_t *token, token_id_t id, gchar *text, gpointer data,
-                GFreeFunc data_free_func) {
+                GDestroyNotify data_free_func) {
     token->id = id;
     token->text = text;
     token->data = data;
     token->data_free_func = data_free_func;
+    token->children = g_ptr_array_new();
 }
 
 token_t *token_new(token_id_t id, gchar *text, gpointer data,
-                   GFreeFunc data_free_func) {
+                   GDestroyNotify data_free_func) {
     token_t *token = g_new(token_t, 1);
     token_init(token, id, text, data, data_free_func);
     return token;
 }
 
 token_t *token_new_strndup(token_id_t id, gchar *text, gchar *text_end,
-                           gpointer data, GFreeFunc data_free_func) {
+                           gpointer data, GDestroyNotify data_free_func) {
     return token_new(id, g_strndup(text, text_end - text), data,
                      data_free_func);
 }
@@ -47,7 +48,11 @@ token_t *token_new_strndup_no_data(token_id_t id, gchar *text,
     return token_new_no_data(id, g_strndup(text, text_end - text));
 }
 
-void token_final(token_t *token) {
+static void token_free_func(gpointer token) {
+    token_free_recursive((token_t *) token);
+}
+
+static void token_final_internal(token_t *token, gboolean recursive) {
     g_free(token->text);
     if (token->data != NULL) {
         if (token->data_free_func != NULL) {
@@ -56,11 +61,32 @@ void token_final(token_t *token) {
             g_free(token->data);
         }
     }
+    if (recursive) {
+        g_ptr_array_set_free_func(token->children, token_free_func);
+    }
+    g_ptr_array_free(token->children, recursive);
+}
+
+void token_final(token_t *token) {
+    token_final_internal(token, FALSE);
+}
+
+void token_final_recursive(token_t *token) {
+    token_final_internal(token, TRUE);
 }
 
 void token_free(token_t *token) {
     token_final(token);
     g_free(token);
+}
+
+void token_free_recursive(token_t *token) {
+    token_final_recursive(token);
+    g_free(token);
+}
+
+void token_append_child(token_t *token, token_t *child) {
+    g_ptr_array_add(token->children, child);
 }
 
 
