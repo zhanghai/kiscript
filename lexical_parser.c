@@ -7,6 +7,8 @@
 
 #include <errno.h>
 
+#include "lexical_parser_utils.h"
+
 // NOTE: All text arrays are sorted reversely for matching longer text first.
 
 GPtrArray *lexical_token_list(gchar **input_p) {
@@ -1075,6 +1077,26 @@ static gboolean hex_escape_sequence_match_save_value(gchar **input_p,
     return FALSE;
 }
 
+gboolean unicode_escape_sequence_match_save_value(gchar **input_p,
+                                                  GString *buffer) {
+
+    gchar *input_old = *input_p;
+    guint digit[4];
+    if (char_match(input_p, 'u') && hex_digit_match_save(input_p, &digit[0])
+        && hex_digit_match_save_value(input_p, &digit[1])
+        && hex_digit_match_save_value(input_p, &digit[2])
+        && hex_digit_match_save_value(input_p, &digit[3])) {
+        gunichar char0 = 4096 * digit[0] + 256 * digit[1] + 16 * digit[2]
+                         + digit[3];
+        g_string_append_unichar(buffer, char0);
+        return TRUE;
+    }
+
+    // BACKTRACK!
+    *input_p = input_old;
+    return FALSE;
+}
+
 static gboolean string_character_match_save(gchar **input_p, gchar quote,
                                      GString *buffer) {
     if (char_is_first(*input_p, quote) || line_terminator_is_first(*input_p)) {
@@ -1183,24 +1205,4 @@ token_t *string_literal(gchar **input_p) {
 
     // TODO: Error!
     return NULL;
-}
-
-gboolean unicode_escape_sequence_match_save_value(gchar **input_p,
-                                                  GString *buffer) {
-
-    gchar *input_old = *input_p;
-    guint digit[4];
-    if (char_match(input_p, 'u') && hex_digit_match_save(input_p, &digit[0])
-        && hex_digit_match_save_value(input_p, &digit[1])
-        && hex_digit_match_save_value(input_p, &digit[2])
-        && hex_digit_match_save_value(input_p, &digit[3])) {
-        gunichar char0 = 4096 * digit[0] + 256 * digit[1] + 16 * digit[2]
-                         + digit[3];
-        g_string_append_unichar(buffer, char0);
-        return TRUE;
-    }
-
-    // BACKTRACK!
-    *input_p = input_old;
-    return FALSE;
 }
