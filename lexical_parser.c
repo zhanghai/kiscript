@@ -4,9 +4,10 @@
 //
 
 #include "lexical_parser.h"
-#include "parser.h"
 
 #include <errno.h>
+
+// NOTE: All text arrays are sorted reversely for matching longer text first.
 
 GPtrArray *lexical_token_list(gchar **input_p) {
     GPtrArray *token_list = g_ptr_array_new();
@@ -309,32 +310,32 @@ token_t *single_line_comment(gchar **input_p) {
 }
 
 static char *KEYWORDS[] = {
-        "break",
-        "do",
-        "instanceof",
-        "typeof",
-        "case",
-        "else",
-        "new",
-        "var",
-        "catch",
-        "finally",
-        "return",
-        "void",
-        "continue",
-        "for",
-        "switch",
-        "while",
-        "debugger",
-        "function",
-        "this",
         "with",
-        "default",
-        "if",
+        "while",
+        "void",
+        "var",
+        "typeof",
+        "try",
         "throw",
-        "delete",
+        "this",
+        "switch",
+        "return",
+        "new",
+        "instanceof",
         "in",
-        "try"
+        "if",
+        "function",
+        "for",
+        "finally",
+        "else",
+        "do",
+        "delete",
+        "default",
+        "debugger",
+        "continue",
+        "catch",
+        "case",
+        "break"
 };
 
 gboolean keyword_is_first(gchar *input) {
@@ -368,24 +369,24 @@ gboolean keyword_is_keyword_with_id(token_t *token, keyword_id_t keyword_id) {
            && *keyword_get_id(token) == keyword_id;
 }
 
+// Strict mode
 static char *FUTURE_RESERVED_WORDS[] = {
-        "class",
-        "enum",
-        "extends",
-        "super",
-        "const",
-        "export",
-        "import",
-        // Strict mode
-        "implements",
-        "let",
-        "private",
-        "public",
         "yield",
-        "interface",
-        "package",
+        "super",
+        "static",
+        "public",
         "protected",
-        "static"
+        "private",
+        "package",
+        "let",
+        "interface",
+        "import",
+        "implements",
+        "extends",
+        "export",
+        "enum",
+        "const",
+        "class"
 };
 
 gboolean future_reserved_word_is_first(gchar *input) {
@@ -618,53 +619,52 @@ token_t *identifier(gchar **input_p) {
 }
 
 static char *PUNCTUATORS[] = {
-        "{",
+        "++",
+        "+=",
+        "+",
+        "%=",
+        "%",
+        "&&",
+        "&=",
+        "&",
+        "*=",
+        "*",
         "}",
-        "(",
-        ")",
-        "[",
+        "{",
         "]",
+        "[",
+        ")",
+        "(",
         ".",
+        "?",
+        "!==",
+        "!=",
+        "!",
+        ":",
         ";",
         ",",
-        "<",
-        ">",
-        "<=",
-        ">=",
-        "==",
-        "!=",
-        "===",
-        "!==",
-        "",
-        "+",
-        "-",
-        "*",
-        "%",
-        "++",
         "--",
-        "<<",
-        ">>",
-        ">>>",
-        "&",
-        "|",
-        "^",
-        "!",
-        "~",
-        "&&",
-        "||",
-        "?",
-        ":",
-        "=",
-        "+=",
         "-=",
-        "*=",
-        "%=",
-        "<<=",
-        ">>=",
-        ">>>=",
-        "&=",
+        "-",
+        "||",
         "|=",
-        "^="
+        "|",
+        ">>>=",
+        ">>>",
+        ">>=",
+        ">>",
+        ">=",
+        ">",
+        "===",
+        "==",
+        "=",
+        "<=",
+        "<<=",
+        "<<",
+        "<",
+        "~",
+        "^=",
+        "^"
 };
 
 gboolean punctuator_is_first(gchar *input) {
@@ -672,15 +672,32 @@ gboolean punctuator_is_first(gchar *input) {
                                G_N_ELEMENTS(FUTURE_RESERVED_WORDS));
 }
 
+static DEFINE_ENUM_NEW(punctuator_id)
+
 token_t *punctuator(gchar **input_p) {
 
-    for (gsize i = 0; i < G_N_ELEMENTS(PUNCTUATORS); ++i) {
-        try_match_text_and_return_token(input_p, PUNCTUATORS[i],
-                                        TOKEN_LEXICAL_PUNCTUATOR)
+    gchar *input_old = *input_p;
+    gsize index;
+    if (text_array_match_save_index(input_p, PUNCTUATORS,
+                                    G_N_ELEMENTS(PUNCTUATORS), &index)) {
+        return token_new_strndup(TOKEN_LEXICAL_PUNCTUATOR, input_old, *input_p,
+                                 punctuator_id_new((punctuator_id_t) index),
+                                 NULL);
     }
 
     // TODO: Error!
     return NULL;
+}
+
+punctuator_id_t *punctuator_get_id(token_t *token) {
+    g_assert(token->id == TOKEN_LEXICAL_PUNCTUATOR);
+    return (punctuator_id_t *) token->data;
+}
+
+gboolean punctuator_is_punctuator_with_id(token_t *token,
+                                          punctuator_id_t punctuator_id) {
+    return token->id == TOKEN_LEXICAL_PUNCTUATOR
+           && *punctuator_get_id(token) == punctuator_id;
 }
 
 static char *DIV_PUNCTUATORS[] = {

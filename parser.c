@@ -287,6 +287,10 @@ gboolean text_array_is_match(gchar *input, gchar **text_array,
     return FALSE;
 }
 
+gboolean g_ptr_array_in_range(GPtrArray *array, gsize position) {
+    return position >= 0 && position < array->len;
+}
+
 
 void normalize_input(gchar **input_p) {
 
