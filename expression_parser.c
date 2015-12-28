@@ -35,10 +35,18 @@ token_t *primary_expression(GPtrArray *input, gsize *position_p) {
         if (object_literal_is_first(input)) {
             return object_literal(input, position_p);
         }
-        if (token->id == TOKEN_LEXICAL_PUNCTUATOR && *punctuator_get_id(token) == PUNCTUATOR_PARENTHESIS_LEFT) {
+        if (punctuator_is_punctuator_with_id(token,
+                                             PUNCTUATOR_PARENTHESIS_LEFT)) {
             ++(*position_p);
-            token = g_ptr_array_index(input, *position_p);
-            // TODO: Expression
+            token_t *expression_token = expression(input, position_p);
+            if (g_ptr_array_in_range(input, *position_p)) {
+                token = g_ptr_array_index(input, *position_p);
+                if (punctuator_is_punctuator_with_id(token,
+                        PUNCTUATOR_PARENTHESIS_RIGHT)) {
+                    ++(*position_p);
+                    return expression_token;
+                }
+            }
         }
     }
 
@@ -62,6 +70,11 @@ gboolean object_literal_is_first(GPtrArray *input) {
 }
 
 token_t *object_literal(GPtrArray *input, gsize *position_t) {
+    // TODO
+    return NULL;
+}
+
+token_t *expression(GPtrArray *input, gsize *position_t) {
     // TODO
     return NULL;
 }
