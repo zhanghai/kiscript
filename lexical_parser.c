@@ -6,6 +6,7 @@
 #include "lexical_parser.h"
 
 #include <string.h>
+#include <errno.h>
 
 gboolean text_is_match(gchar *input, gchar *text) {
     return g_strcmp0(input, text) == 0;
@@ -796,6 +797,23 @@ token_t *numeric_literal(gchar **input_p) {
     return NULL;
 }
 
+static gdouble *real_new(gdouble value) {
+    gdouble *value_p = g_new(gdouble, 1);
+    *value_p = value;
+    return value_p;
+}
+
+static gdouble *real_new_parse(gchar *input, gchar *input_end) {
+    gchar *text = g_strndup(input, input_end - input);
+    gdouble *value_p = real_new(g_ascii_strtod(text, NULL));
+    g_free(text);
+    if (errno) {
+        // TODO: Handle overflow/underflow.
+        errno = 0;
+    }
+    return value_p;
+}
+
 #define DECIMAL_DIGITS "0123456789"
 
 static gboolean decimal_digit_match(gchar **input_p) {
@@ -827,9 +845,13 @@ static DEFINE_MATCH_MULTIPLE_FUNC(decimal_digit_match)
 token_t *decimal_literal(gchar **input_p) {
     gchar *input_old = *input_p;
     if (decimal_digit_match_multiple(input_p)) {
+        gboolean error = FALSE;
+        gchar *input_before_dot = *input_p;
         if (char_match(input_p, '.')) {
             if (decimal_digit_match_multiple(input_p)) {
 
+            } else {
+                error = TRUE;
             }
         } else {
 
@@ -850,10 +872,14 @@ static gint64 *integer_new(gint64 value) {
     return value_p;
 }
 
-static gint64 *integer_parse(gchar *input, gchar *input_end, guint base) {
-    gchar *digits = g_strndup(input, input_end - input);
-    gint64 *value_p = integer_new(g_ascii_strtoll(digits, NULL, base));
-    g_free(digits);
+static gint64 *integer_new_parse(gchar *input, gchar *input_end, guint base) {
+    gchar *text = g_strndup(input, input_end - input);
+    gint64 *value_p = integer_new(g_ascii_strtoll(text, NULL, base));
+    g_free(text);
+    if (errno) {
+        // TODO: Handle overflow/underflow.
+        errno = 0;
+    }
     return value_p;
 }
 
@@ -889,7 +915,7 @@ token_t *decimal_integer_literal(gchar **input_p) {
     if (decimal_digit_match_multiple(input_p)) {
         return token_new_strndup(TOKEN_LEXICAL_DECIMAL_INTEGER_LITERAL,
                                  input_old, *input_p,
-                                 integer_parse(input_old, *input_p, 10),
+                                 integer_new_parse(input_old, *input_p, 10),
                                  NULL);
     }
 
@@ -929,8 +955,9 @@ token_t *binary_integer_literal(gchar **input_p) {
         if (binary_digit_match_multiple(input_p)) {
             return token_new_strndup(TOKEN_LEXICAL_BINARY_INTEGER_LITERAL,
                                      input_old, *input_p,
-                                     integer_parse(input_digit_start, *input_p,
-                                                   2), NULL);
+                                     integer_new_parse(input_digit_start,
+                                                       *input_p,
+                                                       2), NULL);
         }
     }
 
@@ -970,8 +997,9 @@ token_t *octal_integer_literal(gchar **input_p) {
         if (octal_digit_match_multiple(input_p)) {
             return token_new_strndup(TOKEN_LEXICAL_OCTAL_INTEGER_LITERAL,
                                      input_old, *input_p,
-                                     integer_parse(input_digit_start, *input_p,
-                                                   8), NULL);
+                                     integer_new_parse(input_digit_start,
+                                                       *input_p,
+                                                       8), NULL);
         }
     }
 
@@ -1011,8 +1039,9 @@ token_t *hex_integer_literal(gchar **input_p) {
         if (hex_digit_match_multiple(input_p)) {
             return token_new_strndup(TOKEN_LEXICAL_HEX_INTEGER_LITERAL,
                                      input_old, *input_p,
-                                     integer_parse(input_digit_start, *input_p,
-                                                   16), NULL);
+                                     integer_new_parse(input_digit_start,
+                                                       *input_p,
+                                                       16), NULL);
         }
     }
 
