@@ -10,11 +10,11 @@
 
 token_t *primary_expression(GPtrArray *input, gsize *position_p);
 
-gboolean array_literal_is_first(GPtrArray *input);
+gboolean array_literal_is_first(GPtrArray *input, gsize position);
 
 token_t *array_literal(GPtrArray *input, gsize *position_t);
 
-gboolean object_literal_is_first(GPtrArray *input);
+gboolean object_literal_is_first(GPtrArray *input, gsize position);
 
 token_t *object_literal(GPtrArray *input, gsize *position_t);
 
