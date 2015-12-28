@@ -9,6 +9,9 @@
 #include "syntactic_parser_utils.h"
 
 /*
+ * TODO: AST
+ *
+ * GRAMMAR:
  * Statement :
  *     Block
  *     VariableStatement
@@ -42,21 +45,35 @@ gboolean block_is_first(GPtrArray *input, gsize position) {
                                                PUNCTUATOR_CURLY_BRACE_LEFT);
 }
 
+/*
+ * Block -> StatementList?
+ *
+ * GRAMMAR:
+ * Block :
+ *     { StatementList? }
+ */
 token_t *block(GPtrArray *input, gsize *position_p) {
 
     token_t *token;
-    if (token_get(input, *position_p, &token)
-        && punctuator_is_punctuator_with_id(token,
-                                            PUNCTUATOR_CURLY_BRACE_LEFT)
-        && token_consume_free(input, position_p)) {
-        token_t *statement_list_token = statement_list(input, position_p);
-        if (token_get(input, *position_p, &token)
-            && punctuator_is_punctuator_with_id(token,
-                                                PUNCTUATOR_CURLY_BRACE_RIGHT)
-            && token_consume_free(input, position_p)) {
-
+    do {
+        if (token_get_consume_free_punctuator_with_id(input, position_p,
+                PUNCTUATOR_CURLY_BRACE_LEFT)) {
+            token_t *statement_list_token = NULL;
+            if (!token_get_consume_free_punctuator_with_id(input,
+                    position_p, PUNCTUATOR_CURLY_BRACE_RIGHT)) {
+                statement_list_token = statement_list(input, position_p);
+                if (!token_get_consume_free_punctuator_with_id(input,
+                        position_p, PUNCTUATOR_CURLY_BRACE_RIGHT)) {
+                    break;
+                }
+            }
+            token = token_new_no_text_no_data(TOKEN_STATEMENT_BLOCK);
+            if (statement_list_token) {
+                token_add_child(token, statement_list_token);
+            }
+            return token;
         }
-    }
+    } while (FALSE);
 
     // TODO: Error!
     return NULL;

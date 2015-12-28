@@ -32,14 +32,14 @@ token_t *token_new_strndup(token_id_t id, gchar *text, gchar *text_end,
                      data_free_func);
 }
 
-static void token_data_free_gstring(gpointer string) {
+static void token_data_gstring_free_func(gpointer string) {
     g_string_free((GString *) string, TRUE);
 }
 
 token_t *token_new_strndup_gstring(token_id_t id, gchar *text, gchar *text_end,
                                    GString *string) {
     return token_new_strndup(id, text, text_end, string,
-                             token_data_free_gstring);
+                             token_data_gstring_free_func);
 }
 
 token_t *token_new_no_data(token_id_t id, gchar *text) {
@@ -51,14 +51,25 @@ token_t *token_new_strndup_no_data(token_id_t id, gchar *text,
     return token_new_no_data(id, g_strndup(text, text_end - text));
 }
 
+token_t *token_new_no_text(token_id_t id, gpointer data,
+                           GDestroyNotify data_free_func) {
+    return token_new(id, NULL, data, data_free_func);
+}
+
+token_t *token_new_no_text_no_data(token_id_t id) {
+    return token_new_no_text(id, NULL, NULL);
+}
+
 static void token_free_func(gpointer token) {
     token_free_recursive((token_t *) token);
 }
 
 static void token_final_internal(token_t *token, gboolean recursive) {
-    g_free(token->text);
-    if (token->data != NULL) {
-        if (token->data_free_func != NULL) {
+    if (token->text) {
+        g_free(token->text);
+    }
+    if (token->data) {
+        if (token->data_free_func) {
             token->data_free_func(token->data);
         } else {
             g_free(token->data);
@@ -88,7 +99,7 @@ void token_free_recursive(token_t *token) {
     g_free(token);
 }
 
-void token_append_child(token_t *token, token_t *child) {
+void token_add_child(token_t *token, token_t *child) {
     g_ptr_array_add(token->children, child);
 }
 

@@ -26,6 +26,8 @@ typedef enum {
     TOKEN_LEXICAL_BOOLEAN_LITERAL,
     TOKEN_LEXICAL_NUMERIC_LITERAL,
     TOKEN_LEXICAL_STRING_LITERAL,
+    TOKEN_STATEMENT_BLOCK,
+    TOKEN_STATEMENT_STATEMENT_LIST
 } token_id_t;
 
 typedef struct {
@@ -53,6 +55,11 @@ token_t * token_new_no_data(token_id_t id, gchar *text);
 token_t * token_new_strndup_no_data(token_id_t id, gchar *text,
                                     gchar *text_end);
 
+token_t *token_new_no_text(token_id_t id, gpointer data,
+                           GDestroyNotify data_free_func);
+
+token_t *token_new_no_text_no_data(token_id_t id);
+
 void token_final(token_t *token);
 
 void token_final_recursive(token_t *token);
@@ -61,7 +68,7 @@ void token_free(token_t *token);
 
 void token_free_recursive(token_t *token);
 
-void token_append_child(token_t *token, token_t *child);
+void token_add_child(token_t *token, token_t *child);
 
 
 void normalize_input(gchar **input_p);

@@ -18,6 +18,13 @@ gboolean token_consume_no_free(GPtrArray *input, gsize *position_p);
 
 gboolean token_consume_free_recursive(GPtrArray *input, gsize *position_p);
 
+gboolean token_get_is_first_punctuator_with_id(GPtrArray *input,
+                                               gsize position,
+                                               punctuator_id_t punctuator_id);
+
+gboolean token_get_consume_free_punctuator_with_id(GPtrArray *input,
+        gsize *position_p, punctuator_id_t punctuator_id);
+
 
 #define return_token_if_is_first(input, position_p, token_name) \
     if (token_name##_is_first((input), *(position_p))) { \

@@ -11,7 +11,7 @@
 // PrimaryExpression = Keyword(this)|Identifier|NullLiteral|BooleanLiteral
 //         |NumericLiteral|StringLiteral|ArrayLiteral|ObjectLiteral|Expression
 //
-// STANDARD:
+// GRAMMAR:
 // PrimaryExpression :
 //     this
 //     Identifier
@@ -37,14 +37,11 @@ token_t *primary_expression(GPtrArray *input, gsize *position_p) {
         }
         return_token_if_is_first(input, position_p, array_literal)
         return_token_if_is_first(input, position_p, object_literal)
-        if (punctuator_is_punctuator_with_id(token,
-                                             PUNCTUATOR_PARENTHESIS_LEFT)
-            && token_consume_free(input, position_p)) {
+        if (token_get_consume_free_punctuator_with_id(input, position_p,
+                PUNCTUATOR_PARENTHESIS_LEFT)) {
             token_t *expression_token = expression(input, position_p);
-            if (token_get(input, *position_p, &token)
-                && punctuator_is_punctuator_with_id(token,
-                        PUNCTUATOR_PARENTHESIS_RIGHT)
-                && token_consume_free(input, position_p)) {
+            if (token_get_consume_free_punctuator_with_id(input, position_p,
+                    PUNCTUATOR_PARENTHESIS_RIGHT)) {
                 return expression_token;
             }
         }
@@ -55,17 +52,15 @@ token_t *primary_expression(GPtrArray *input, gsize *position_p) {
 }
 
 gboolean array_literal_is_first(GPtrArray *input, gsize position) {
-    token_t *token;
-    return token_get(input, position, &token)
-           && punctuator_is_punctuator_with_id(token,
-                                               PUNCTUATOR_SQUARE_BRACKET_LEFT);
+    return token_get_is_first_punctuator_with_id(input, position,
+            PUNCTUATOR_SQUARE_BRACKET_LEFT);
 }
 
 /*
  * TODO: AST Specification.
  *
- * STANDARD:
- * TODO: Standard.
+ * GRAMMAR:
+ * TODO: Grammar.
  */
 token_t *array_literal(GPtrArray *input, gsize *position_t) {
     // TODO
@@ -73,11 +68,8 @@ token_t *array_literal(GPtrArray *input, gsize *position_t) {
 }
 
 gboolean object_literal_is_first(GPtrArray *input, gsize position) {
-    token_t *token;
-    return token_get(input, position, &token)
-           && punctuator_is_punctuator_with_id(token,
-                                               PUNCTUATOR_CURLY_BRACE_LEFT);
-    return FALSE;
+    return token_get_is_first_punctuator_with_id(input, position,
+                                                 PUNCTUATOR_CURLY_BRACE_LEFT);
 }
 
 token_t *object_literal(GPtrArray *input, gsize *position_t) {
