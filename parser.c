@@ -8,7 +8,7 @@
 #include <string.h>
 
 void token_init(token_t *token, token_id_t id, gchar *text, gpointer data,
-                token_data_free_func_t data_free_func) {
+                GFreeFunc data_free_func) {
     token->id = id;
     token->text = text;
     token->data = data;
@@ -16,15 +16,14 @@ void token_init(token_t *token, token_id_t id, gchar *text, gpointer data,
 }
 
 token_t *token_new(token_id_t id, gchar *text, gpointer data,
-                   token_data_free_func_t data_free_func) {
+                   GFreeFunc data_free_func) {
     token_t *token = g_new(token_t, 1);
     token_init(token, id, text, data, data_free_func);
     return token;
 }
 
 token_t *token_new_strndup(token_id_t id, gchar *text, gchar *text_end,
-                           gpointer data,
-                           token_data_free_func_t data_free_func) {
+                           gpointer data, GFreeFunc data_free_func) {
     return token_new(id, g_strndup(text, text_end - text), data,
                      data_free_func);
 }

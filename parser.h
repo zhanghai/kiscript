@@ -26,24 +26,21 @@ typedef enum {
     TOKEN_LEXICAL_STRING_LITERAL
 } token_id_t;
 
-typedef void (*token_data_free_func_t)(gpointer data);
-
 typedef struct {
     token_id_t id;
     gchar *text;
     gpointer data;
-    token_data_free_func_t data_free_func;
+    GFreeFunc data_free_func;
 } token_t;
 
 void token_init(token_t *token, token_id_t id, gchar *text, gpointer data,
-                token_data_free_func_t data_free_func);
+                GFreeFunc data_free_func);
 
 token_t * token_new(token_id_t id, gchar *text, gpointer data,
-                    token_data_free_func_t data_free_func);
+                    GFreeFunc data_free_func);
 
 token_t *token_new_strndup(token_id_t id, gchar *text, gchar *text_end,
-                           gpointer data,
-                           token_data_free_func_t data_free_func);
+                           gpointer data, GFreeFunc data_free_func);
 
 token_t *token_new_strndup_gstring(token_id_t id, gchar *text, gchar *text_end,
                                    GString *string);
@@ -52,8 +49,6 @@ token_t * token_new_no_data(token_id_t id, gchar *text);
 
 token_t * token_new_strndup_no_data(token_id_t id, gchar *text,
                                     gchar *text_end);
-
-token_t *token_new_buffer_no_data(token_id_t id, GString *buffer);
 
 void token_final(token_t *token);
 
