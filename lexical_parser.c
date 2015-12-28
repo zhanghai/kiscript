@@ -55,14 +55,14 @@ static gboolean usp_match(gchar **input_p) {
     }
 }
 
-#define CHARACTER_TAB_CHAR '\u0009'
-#define CHARACTER_VT_CHAR '\u000B'
-#define CHARACTER_FF_CHAR '\u000C'
-#define CHARACTER_SP_CHAR '\u0020'
-// TODO: NO_BREAK SPACE in UTF-8 is 0xc2a0, while the C code is '\u00a0',
+#define CHARACTER_TAB_CHAR '\x09'
+#define CHARACTER_VT_CHAR '\x0B'
+#define CHARACTER_FF_CHAR '\x0C'
+#define CHARACTER_SP_CHAR '\x20'
+// TODO: NO_BREAK SPACE in UTF-8 is 0xc2a0, while the C code is '\xa0',
 // according to http://www.fileformat.info/info/unicode/char/00a0/index.htm .
 // Will this give the correct behavior?
-#define CHARACTER_NBSP_TEXT "\u00A0"
+#define CHARACTER_NBSP_TEXT "\xA0"
 #define CHARACTER_BOM_TEXT "\uFEFF"
 
 gboolean white_space_is_first(gchar *input) {
@@ -113,11 +113,11 @@ token_t *white_space(gchar **input_p) {
     return NULL;
 }
 
-#define CHARACTER_LF_CHAR '\u000A'
-#define CHARACTER_CR_CHAR '\u000D'
+#define CHARACTER_LF_CHAR '\x0A'
+#define CHARACTER_CR_CHAR '\x0D'
 #define CHARACTER_LS_TEXT "\u2028"
 #define CHARACTER_PS_TEXT "\u2029"
-#define TEXT_CR_LF "\u000D\u000A"
+#define TEXT_CR_LF "\x0D\x0A"
 
 gboolean line_terminator_is_first(gchar *input) {
     return char_is_first(input, CHARACTER_LF_CHAR)
@@ -256,7 +256,7 @@ static gboolean post_asterisk_comment_chars_match(gchar **input_p) {
 
 /*
  * MultiLineComment ::
- *     /* MultiLineCommentChars? */                                       /*
+ *     / * MultiLineCommentChars? * /
  * MultiLineCommentChars ::
  *     MultiLineNotAsteriskChar MultiLineCommentChars?
  *     * PostAsteriskCommentChars?
@@ -1067,12 +1067,12 @@ static gboolean string_character_match_save(gchar **input_p, gchar quote,
             if (char_match_save(input_p, '\'', buffer)
                 || char_match_save(input_p, '"', buffer)
                 || char_match_save(input_p, '\\', buffer)
-                || char_match_save_other(input_p, 'b', buffer, '\u0008')
-                || char_match_save_other(input_p, 'f', buffer, '\u000C')
-                || char_match_save_other(input_p, 'n', buffer, '\u000A')
-                || char_match_save_other(input_p, 'r', buffer, '\u000D')
-                || char_match_save_other(input_p, 't', buffer, '\u0009')
-                || char_match_save_other(input_p, 'v', buffer, '\u000B')
+                || char_match_save_other(input_p, 'b', buffer, '\x08')
+                || char_match_save_other(input_p, 'f', buffer, '\x0C')
+                || char_match_save_other(input_p, 'n', buffer, '\x0A')
+                || char_match_save_other(input_p, 'r', buffer, '\x0D')
+                || char_match_save_other(input_p, 't', buffer, '\x09')
+                || char_match_save_other(input_p, 'v', buffer, '\x0B')
                 || char_match_save_other(input_p, '0', buffer, '\0')
                 || hex_escape_sequence_match_save_value(input_p, buffer)
                 || unicode_escape_sequence_match_save_value(input_p, buffer)) {

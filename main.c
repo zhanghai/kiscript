@@ -6,7 +6,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "lexical_parser.h"
+
 int main() {
+    char *input = "0x1234567890abcdefABCDEF";
+    input_element_div(&input);
     printf("Hello, World!\n");
     return EXIT_SUCCESS;
 }
