@@ -960,7 +960,7 @@ static gboolean hex_digit_match(gchar **input_p) {
     return chars_match(input_p, CHARACTERS_HEX_DIGITS_CHARS);
 }
 
-static gboolean hex_digit_match_save(gchar **input_p, gunichar *char_p) {
+static gboolean hex_digit_match_save_char(gchar **input_p, gunichar *char_p) {
     return chars_match_save_char(input_p, CHARACTERS_HEX_DIGITS_CHARS, char_p);
 }
 
@@ -983,7 +983,7 @@ static guint hex_digit_to_value(gunichar char0) {
 
 static gboolean hex_digit_match_save_value(gchar **input_p, guint *value_p) {
     gunichar char0;
-    if (hex_digit_match_save(input_p, &char0)) {
+    if (hex_digit_match_save_char(input_p, &char0)) {
         *value_p = hex_digit_to_value(char0);
         return TRUE;
     } else {
