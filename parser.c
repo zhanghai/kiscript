@@ -20,7 +20,7 @@ static token_t *token_new_with_children(token_id_t id, gpointer data,
                                         clone_func_t data_clone_func,
                                         free_func_t data_free_func,
                                         GPtrArray *children) {
-    return token_init(g_new(token_t, 1), id, data, data_clone_func,
+    return token_init(g_new_1(token_t), id, data, data_clone_func,
                       data_free_func, children);
 }
 
@@ -123,7 +123,7 @@ static error_info_t *error_info_init_syntactic(error_info_t *error_info,
 }
 
 static error_info_t *error_info_alloc() {
-    return g_new(error_info_t, 1);
+    return g_new_1(error_info_t);
 }
 
 error_info_t *error_info_new_lexical(error_id_t id, gchar *position) {

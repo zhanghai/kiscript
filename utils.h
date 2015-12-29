@@ -33,7 +33,7 @@ typedef void (*free_func_t)(gpointer);
 
 #define DEFINE_PRIMITIVE_NEW_FUNC_WITH_TYPE(name, type_name) \
     type_name *name##_new(type_name value) { \
-        type_name *value_p = g_new(type_name, 1); \
+        type_name *value_p = g_new_1(type_name); \
         *value_p = value; \
         return value_p; \
     }
