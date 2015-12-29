@@ -161,14 +161,26 @@ gboolean punctuator_is_first(gchar *input);
 
 token_t *punctuator(gchar **input_p);
 
-punctuator_id_t *punctuator_get_id(token_t *token);
+DECLARE_TOKEN_IS_TOKEN_FUNC(punctuator)
 
-gboolean punctuator_is_punctuator_with_id(token_t *token,
-                                          punctuator_id_t punctuator_id);
+DECLARE_TOKEN_GET_ID_FUNC(punctuator)
+
+DECLARE_TOKEN_IS_TOKEN_WITH_ID_FUNC(punctuator)
+
+typedef enum {
+    DIV_PUNCTUATOR_DIVIDE_ASSIGNMENT,
+    DIV_PUNCTUATOR_SLASH
+} div_punctuator_id_t;
 
 gboolean div_punctuator_is_first(gchar *input);
 
 token_t *div_punctuator(gchar **input_p);
+
+DECLARE_TOKEN_IS_TOKEN_FUNC(div_punctuator)
+
+DECLARE_TOKEN_GET_ID_FUNC(div_punctuator)
+
+DECLARE_TOKEN_IS_TOKEN_WITH_ID_FUNC(div_punctuator)
 
 gboolean null_literal_is_first(gchar *input);
 

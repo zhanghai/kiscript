@@ -31,7 +31,12 @@ gboolean char_match_save(gchar **input_p, gchar char0, GString *buffer);
 
 gboolean char_match_not(gchar **input_p, gchar char0);
 
+gboolean char_match_not_save(gchar **input_p, gchar char0, GString *buffer);
+
 gboolean char_match_not_2(gchar **input_p, gchar char0, gchar char1);
+
+gboolean char_match_not_2_save(gchar **input_p, gchar char0, gchar char1,
+                               GString *buffer);
 
 gboolean chars_is_first(gchar *input, gchar *chars);
 

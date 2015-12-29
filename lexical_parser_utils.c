@@ -81,9 +81,28 @@ gboolean char_match_not(gchar **input_p, gchar char0) {
     }
 }
 
+gboolean char_match_not_save(gchar **input_p, gchar char0, GString *buffer) {
+    if (!char_is_first(*input_p, char0)) {
+        char_consume_save(input_p, buffer);
+        return TRUE;
+    } else {
+        return FALSE;
+    }
+}
+
 gboolean char_match_not_2(gchar **input_p, gchar char0, gchar char1) {
     if (!char_is_first(*input_p, char0) && !char_is_first(*input_p, char1)) {
         char_consume(input_p);
+        return TRUE;
+    } else {
+        return FALSE;
+    }
+}
+
+gboolean char_match_not_2_save(gchar **input_p, gchar char0, gchar char1,
+                               GString *buffer) {
+    if (!char_is_first(*input_p, char0) && !char_is_first(*input_p, char1)) {
+        char_consume_save(input_p, buffer);
         return TRUE;
     } else {
         return FALSE;
