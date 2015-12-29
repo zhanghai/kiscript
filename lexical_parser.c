@@ -959,8 +959,7 @@ static guint hex_digit_to_value(gunichar char0) {
         return (guint) char0 - 'A' + 10;
     }
 
-    // TODO: Error!
-    return 16;
+    g_error("Illegal hex digit char: %c", char0);
 }
 
 static gboolean hex_digit_match_save_value(gchar **input_p, guint *value_p) {
