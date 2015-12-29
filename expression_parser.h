@@ -22,4 +22,11 @@ token_t *assignment_expression(GPtrArray *input, gsize *position_p);
 
 token_t *expression(GPtrArray *input, gsize *position_t);
 
+//============================================
+token_t *assignment_expression(GPtrArray *input, gsize *position_t);
+
+token_t *conditional_expression(GPtrArray *input, gsize *position_t);
+
+token_t *conditional_expression_is_first(GPtrArray *input, gsize position);
+
 #endif //KISCRIPT_EXPRESSION_PARSER_H
