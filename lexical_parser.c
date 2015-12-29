@@ -8,8 +8,16 @@
 #include <errno.h>
 
 #include "lexical_parser_utils.h"
+#include "parser.h"
 
 // NOTE: All text arrays are sorted reversely for matching longer text first.
+
+static gboolean lexical_parse_is_token_ignored(token_t *token) {
+    return token->id == TOKEN_LEXICAL_WHITE_SPACE
+           || token->id == TOKEN_LEXICAL_LINE_TERMINATOR
+           || token->id == TOKEN_LEXICAL_SINGLE_LINE_COMMENT
+           || token->id == TOKEN_LEXICAL_MULTI_LINE_COMMENT;
+}
 
 GPtrArray *lexical_parse(gchar **input_p, token_t **error_p) {
     GPtrArray *token_list = token_list_new();
@@ -21,7 +29,11 @@ GPtrArray *lexical_parse(gchar **input_p, token_t **error_p) {
             *error_p = token;
             return NULL;
         }
-        g_ptr_array_add(token_list, token);
+        if (lexical_parse_is_token_ignored(token)) {
+            token_free(&token);
+        } else {
+            g_ptr_array_add(token_list, token);
+        }
     }
     return token_list;
 }
@@ -43,6 +55,7 @@ GPtrArray *lexical_parse(gchar **input_p, token_t **error_p) {
  *     SingleLineComment
  *     MultiLineComment
  */
+
 token_t *lexical_token(gchar **input_p) {
 
     tokenize_and_return_if_is_first(input_p, keyword)
@@ -64,6 +77,17 @@ token_t *lexical_token(gchar **input_p) {
 
     return error_new_lexical(ERROR_LEXICAL_LEXICAL_TOKEN, *input_p);
 }
+
+/*
+ * WhiteSpace ::
+ *     <TAB>
+ *     <VT>
+ *     <FF>
+ *     <SP>
+ *     <NBSP>
+ *     <BOM>
+ *     <USP>
+ */
 
 static gboolean usp_is_first(gchar *input) {
     return g_unichar_isspace(g_utf8_get_char(input));
@@ -98,16 +122,6 @@ gboolean white_space_is_first(gchar *input) {
            || usp_is_first(input);
 }
 
-/*
- * WhiteSpace ::
- *     <TAB>
- *     <VT>
- *     <FF>
- *     <SP>
- *     <NBSP>
- *     <BOM>
- *     <USP>
- */
 token_t *white_space(gchar **input_p) {
 
     return_token_if_match_char(input_p, CHARACTER_TAB_CHAR,
@@ -128,11 +142,18 @@ token_t *white_space(gchar **input_p) {
     return error_new_lexical(ERROR_LEXICAL_WHITE_SPACE, *input_p);
 }
 
+/*
+ * LineTerminator ::
+ *     <LF>
+ *     <CR>
+ *     <LS>
+ *     <PS>
+ */
+
 #define CHARACTER_LF_CHAR '\x0A'
 #define CHARACTER_CR_CHAR '\x0D'
 #define CHARACTER_LS_TEXT "\u2028"
 #define CHARACTER_PS_TEXT "\u2029"
-#define TEXT_CR_LF "\x0D\x0A"
 
 gboolean line_terminator_is_first(gchar *input) {
     return char_is_first(input, CHARACTER_LF_CHAR)
@@ -141,13 +162,6 @@ gboolean line_terminator_is_first(gchar *input) {
            || text_is_first(input, CHARACTER_PS_TEXT);
 }
 
-/*
- * LineTerminator ::
- *     <LF>
- *     <CR>
- *     <LS>
- *     <PS>
- */
 token_t *line_terminator(gchar **input_p) {
 
     return_token_if_match_char(input_p, CHARACTER_LF_CHAR,
@@ -162,14 +176,6 @@ token_t *line_terminator(gchar **input_p) {
     return error_new_lexical(ERROR_LEXICAL_LINE_TERMINATOR, *input_p);
 }
 
-static gboolean line_terminator_sequence_match(gchar **input_p) {
-    return char_match(input_p, CHARACTER_LF_CHAR)
-           || text_match(input_p, TEXT_CR_LF)
-           || char_match(input_p, CHARACTER_CR_CHAR)
-           || text_match(input_p, CHARACTER_LS_TEXT)
-           || text_match(input_p, CHARACTER_PS_TEXT);
-}
-
 /*
  * LineTerminatorSequence ::
  *     <LF>
@@ -178,22 +184,32 @@ static gboolean line_terminator_sequence_match(gchar **input_p) {
  *     <PS>
  *     <CR> <LF>
  */
-token_t *line_terminator_sequence(gchar **input_p) {
 
-    return_token_if_match_char(input_p, CHARACTER_LF_CHAR,
-                               TOKEN_LEXICAL_LINE_TERMINATOR_SEQUENCE)
-    // NOTE: <CR> <LF> is Promoted over <CR> for the lookahead of <CR>.
-    return_token_if_match_text(input_p, TEXT_CR_LF,
-                               TOKEN_LEXICAL_LINE_TERMINATOR_SEQUENCE)
-    return_token_if_match_char(input_p, CHARACTER_CR_CHAR,
-                               TOKEN_LEXICAL_LINE_TERMINATOR_SEQUENCE)
-    return_token_if_match_text(input_p, CHARACTER_LS_TEXT,
-                               TOKEN_LEXICAL_LINE_TERMINATOR_SEQUENCE)
-    return_token_if_match_text(input_p, CHARACTER_PS_TEXT,
-                               TOKEN_LEXICAL_LINE_TERMINATOR_SEQUENCE)
+#define TEXT_CR_LF "\x0D\x0A"
 
-    return error_new_lexical(ERROR_LEXICAL_LINE_TERMINATOR_SEQUENCE, *input_p);
+static gboolean line_terminator_sequence_match(gchar **input_p) {
+    return char_match(input_p, CHARACTER_LF_CHAR)
+           // NOTE: <CR> <LF> is Promoted over <CR> for being prefix of <CR>.
+           || text_match(input_p, TEXT_CR_LF)
+           || char_match(input_p, CHARACTER_CR_CHAR)
+           || text_match(input_p, CHARACTER_LS_TEXT)
+           || text_match(input_p, CHARACTER_PS_TEXT);
 }
+
+/*
+ * MultiLineComment ::
+ *     / * MultiLineCommentChars? * /
+ * MultiLineCommentChars ::
+ *     MultiLineNotAsteriskChar MultiLineCommentChars?
+ *     * PostAsteriskCommentChars?
+ * PostAsteriskCommentChars ::
+ *     MultiLineNotForwardSlashOrAsteriskChar MultiLineCommentChars?
+ *     * PostAsteriskCommentChars?
+ * MultiLineNotAsteriskChar ::
+ *     SourceCharacter but not *
+ * MultiLineNotForwardSlashOrAsteriskChar ::
+ *     SourceCharacter but not one of / or *
+ */
 
 gboolean multi_line_comment_is_first(gchar *input) {
     return text_is_first(input, "/*");
@@ -234,20 +250,6 @@ static gboolean post_asterisk_comment_chars_match_save(gchar **input_p,
     return FALSE;
 }
 
-/*
- * MultiLineComment ::
- *     / * MultiLineCommentChars? * /
- * MultiLineCommentChars ::
- *     MultiLineNotAsteriskChar MultiLineCommentChars?
- *     * PostAsteriskCommentChars?
- * PostAsteriskCommentChars ::
- *     MultiLineNotForwardSlashOrAsteriskChar MultiLineCommentChars?
- *     * PostAsteriskCommentChars?
- * MultiLineNotAsteriskChar ::
- *     SourceCharacter but not *
- * MultiLineNotForwardSlashOrAsteriskChar ::
- *     SourceCharacter but not one of / or *
- */
 token_t *multi_line_comment(gchar **input_p) {
 
     GString *buffer = g_string_new(NULL);
@@ -261,6 +263,13 @@ token_t *multi_line_comment(gchar **input_p) {
     g_string_free(buffer, TRUE);
     return error_new_lexical(ERROR_LEXICAL_MULTI_LINE_COMMENT, *input_p);
 }
+
+/*
+ * SingleLineComment ::
+ *     // SingleLineCommentChar*
+ * SingleLineCommentChar ::
+ *     SourceCharacter but not LineTerminator
+ */
 
 gboolean single_line_comment_is_first(gchar *input) {
     return text_is_first(input, "//");
@@ -279,12 +288,6 @@ static gboolean single_line_comment_char_match_save(gchar **input_p,
 static DEFINE_MATCH_ANY_SAVE_FUNC(single_line_comment_char_match_any_save,
                                   single_line_comment_char_match_save)
 
-/*
- * SingleLineComment ::
- *     // SingleLineCommentChar*
- * SingleLineCommentChar ::
- *     SourceCharacter but not LineTerminator
- */
 token_t *single_line_comment(gchar **input_p) {
 
     GString *buffer = g_string_new(NULL);
@@ -295,6 +298,202 @@ token_t *single_line_comment(gchar **input_p) {
 
     g_string_free(buffer, TRUE);
     return error_new_lexical(ERROR_LEXICAL_SINGLE_LINE_COMMENT, *input_p);
+}
+
+/*
+ * UnicodeLetter ::
+ *     any character in the Unicode categories “Uppercase letter (Lu)”,
+ *             “Lowercase letter (Ll)”, “Titlecase letter (Lt)”,
+ *             “Modifier letter (Lm)”, “Other letter (Lo)”, or
+ *             “Letter number (Nl)”.
+ */
+
+static gboolean unicode_letter_is_first(gchar *input) {
+    switch (g_unichar_type(g_utf8_get_char(input))) {
+        case G_UNICODE_UPPERCASE_LETTER:
+        case G_UNICODE_LOWERCASE_LETTER:
+        case G_UNICODE_TITLECASE_LETTER:
+        case G_UNICODE_MODIFIER_LETTER:
+        case G_UNICODE_OTHER_LETTER:
+        case G_UNICODE_LETTER_NUMBER:
+            return TRUE;
+        default:
+            return FALSE;
+    }
+}
+
+static gboolean unicode_letter_match_save(gchar **input_p, GString *buffer) {
+    if (unicode_letter_is_first(*input_p)) {
+        char_consume_save(input_p, buffer);
+        return TRUE;
+    } else {
+        return FALSE;
+    }
+}
+
+/**
+ * IdentifierStart ::
+ *     UnicodeLetter
+ *     $
+ *     _
+ *     \ UnicodeEscapeSequence
+ */
+
+static gboolean identifier_start_is_first(gchar *input) {
+    return unicode_letter_is_first(input) || char_is_first(input, '$')
+           || char_is_first(input, '_') || char_is_first(input, '\\');
+}
+
+static gboolean identifier_start_match_save_value(gchar **input_p,
+                                                  GString *buffer) {
+    gboolean matched = unicode_letter_match_save(input_p, buffer)
+                       || char_match_save(input_p, '$', buffer)
+                       || char_match_save(input_p, '_', buffer);
+    if (matched) {
+        return TRUE;
+    } else {
+        // \ UnicodeEscapeSequence
+        gchar *input_old = *input_p;
+        if (char_match(input_p, '\\')
+            && unicode_escape_sequence_match_save_value(input_p, buffer)) {
+            return TRUE;
+        } else {
+            // BACKTRACK!
+            *input_p = input_old;
+            return FALSE;
+        }
+    }
+}
+
+/*
+ * UnicodeCombiningMark ::
+ *     any character in the Unicode categories “Non-spacing mark (Mn)” or
+ *     “Combining spacing mark (Mc)”
+ */
+
+static gboolean unicode_combining_mark_is_first(gchar *input_p) {
+    switch (g_unichar_type(g_utf8_get_char(input_p))) {
+        case G_UNICODE_NON_SPACING_MARK:
+        case G_UNICODE_SPACING_MARK:
+            return TRUE;
+        default:
+            return FALSE;
+    }
+}
+
+static gboolean unicode_combining_mark_match_save(gchar **input_p,
+                                                  GString *buffer) {
+    if (unicode_combining_mark_is_first(*input_p)) {
+        char_consume_save(input_p, buffer);
+        return TRUE;
+    } else {
+        return FALSE;
+    }
+}
+
+/*
+ * UnicodeDigit ::
+ *     any character in the Unicode category “Decimal number (Nd)”
+ */
+
+static gboolean unicode_digit_is_first(gchar *input) {
+    if (g_unichar_type(g_utf8_get_char(input)) == G_UNICODE_DECIMAL_NUMBER) {
+        return TRUE;
+    } else {
+        return FALSE;
+    }
+}
+
+static gboolean unicode_digit_match_save(gchar **input_p, GString *buffer) {
+    if (unicode_digit_is_first(*input_p)) {
+        char_consume_save(input_p, buffer);
+        return TRUE;
+    } else {
+        return FALSE;
+    }
+}
+
+/*
+ * UnicodeConnectorPunctuation ::
+ *     any character in the Unicode category “Connector punctuation (Pc)”
+ */
+
+static gboolean unicode_connector_punctuation_is_first(gchar *input) {
+    if (g_unichar_type(g_utf8_get_char(input))
+        == G_UNICODE_CONNECT_PUNCTUATION) {
+        return TRUE;
+    } else {
+        return FALSE;
+    }
+}
+
+static gboolean unicode_connector_punctuation_match_save(gchar **input_p,
+                                                         GString *buffer) {
+    if (unicode_connector_punctuation_is_first(*input_p)) {
+        char_consume_save(input_p, buffer);
+        return TRUE;
+    } else {
+        return FALSE;
+    }
+}
+
+/*
+ * IdentifierPart ::
+ *     IdentifierStart
+ *     UnicodeCombiningMark
+ *     UnicodeDigit
+ *     UnicodeConnectorPunctuation
+ *     <ZWNJ>
+ *     <ZWJ>
+ */
+
+#define CHARACTER_ZWNJ_TEXT "\u200C"
+#define CHARACTER_ZWJ_TEXT "\u200D"
+
+gboolean identifier_part_is_first(gchar *input) {
+    return identifier_start_is_first(input)
+           || unicode_combining_mark_is_first(input)
+           || unicode_digit_is_first(input)
+           || unicode_connector_punctuation_is_first(input)
+           || text_is_first(input, CHARACTER_ZWNJ_TEXT)
+           || text_is_first(input, CHARACTER_ZWJ_TEXT);
+}
+
+static gboolean identifier_part_match_save_value(gchar **input_p,
+                                                 GString *buffer) {
+    return identifier_start_match_save_value(input_p, buffer)
+           || unicode_combining_mark_match_save(input_p, buffer)
+           || unicode_digit_match_save(input_p, buffer)
+           || unicode_connector_punctuation_match_save(input_p, buffer)
+           || text_match_save(input_p, CHARACTER_ZWNJ_TEXT, buffer)
+           || text_match_save(input_p, CHARACTER_ZWJ_TEXT, buffer);
+}
+
+static DEFINE_MATCH_ANY_SAVE_FUNC(identifier_part_match_any_save_value,
+                                  identifier_part_match_save_value)
+
+/*
+ * NONSTANDARD:
+ * IdentifierName is merged into Identifier
+ * Identifier ::
+ *     IdentifierStart IdentifierPart*
+ * Identifier is not ReservedWord
+ */
+
+gboolean identifier_is_first(gchar *input) {
+    return identifier_start_is_first(input);
+}
+
+token_t *identifier(gchar **input_p) {
+
+    GString *string = g_string_new(NULL);
+    if (identifier_start_match_save_value(input_p, string)) {
+        identifier_part_match_any_save_value(input_p, string);
+        return token_new_gstring(TOKEN_LEXICAL_IDENTIFIER, string);
+    }
+
+    g_string_free(string, TRUE);
+    return error_new_lexical(ERROR_LEXICAL_IDENTIFIER, *input_p);
 }
 
 static char *KEYWORDS[] = {
@@ -406,195 +605,6 @@ DEFINE_TOKEN_GET_ID_FUNC(future_reserved_word)
 
 DEFINE_TOKEN_IS_TOKEN_WITH_ID_FUNC(future_reserved_word)
 
-static gboolean unicode_letter_is_first(gchar *input) {
-    switch (g_unichar_type(g_utf8_get_char(input))) {
-        case G_UNICODE_UPPERCASE_LETTER:
-        case G_UNICODE_LOWERCASE_LETTER:
-        case G_UNICODE_TITLECASE_LETTER:
-        case G_UNICODE_MODIFIER_LETTER:
-        case G_UNICODE_OTHER_LETTER:
-        case G_UNICODE_LETTER_NUMBER:
-            return TRUE;
-        default:
-            return FALSE;
-    }
-}
-
-/*
- * UnicodeLetter ::
- *     any character in the Unicode categories “Uppercase letter (Lu)”,
- *             “Lowercase letter (Ll)”, “Titlecase letter (Lt)”,
- *             “Modifier letter (Lm)”, “Other letter (Lo)”, or
- *             “Letter number (Nl)”.
- */
-static gboolean unicode_letter_match_save(gchar **input_p, GString *buffer) {
-    if (unicode_letter_is_first(*input_p)) {
-        char_consume_save(input_p, buffer);
-        return TRUE;
-    } else {
-        return FALSE;
-    }
-}
-
-static gboolean identifier_start_is_first(gchar *input) {
-    return unicode_letter_is_first(input) || char_is_first(input, '$')
-           || char_is_first(input, '_') || char_is_first(input, '\\');
-}
-
-/**
- * IdentifierStart ::
- *     UnicodeLetter
- *     $
- *     _
- *     \ UnicodeEscapeSequence
- */
-static gboolean identifier_start_match_save_value(gchar **input_p,
-                                                  GString *buffer) {
-    gboolean matched = unicode_letter_match_save(input_p, buffer)
-                       || char_match_save(input_p, '$', buffer)
-                       || char_match_save(input_p, '_', buffer);
-    if (matched) {
-        return TRUE;
-    } else {
-        // \ UnicodeEscapeSequence
-        gchar *input_old = *input_p;
-        if (char_match(input_p, '\\')
-            && unicode_escape_sequence_match_save_value(input_p, buffer)) {
-            return TRUE;
-        } else {
-            // BACKTRACK!
-            *input_p = input_old;
-            return FALSE;
-        }
-    }
-}
-
-static gboolean unicode_combining_mark_is_first(gchar *input_p) {
-    switch (g_unichar_type(g_utf8_get_char(input_p))) {
-        case G_UNICODE_NON_SPACING_MARK:
-        case G_UNICODE_SPACING_MARK:
-            return TRUE;
-        default:
-            return FALSE;
-    }
-}
-
-/*
- * UnicodeCombiningMark ::
- *     any character in the Unicode categories “Non-spacing mark (Mn)” or
- *     “Combining spacing mark (Mc)”
- */
-static gboolean unicode_combining_mark_match_save(gchar **input_p,
-                                                  GString *buffer) {
-    if (unicode_combining_mark_is_first(*input_p)) {
-        char_consume_save(input_p, buffer);
-        return TRUE;
-    } else {
-        return FALSE;
-    }
-}
-
-static gboolean unicode_digit_is_first(gchar *input) {
-    if (g_unichar_type(g_utf8_get_char(input)) == G_UNICODE_DECIMAL_NUMBER) {
-        return TRUE;
-    } else {
-        return FALSE;
-    }
-}
-
-/*
- * UnicodeDigit ::
- *     any character in the Unicode category “Decimal number (Nd)”
- */
-static gboolean unicode_digit_match_save(gchar **input_p, GString *buffer) {
-    if (unicode_digit_is_first(*input_p)) {
-        char_consume_save(input_p, buffer);
-        return TRUE;
-    } else {
-        return FALSE;
-    }
-}
-
-static gboolean unicode_connector_punctuation_is_first(gchar *input) {
-    if (g_unichar_type(g_utf8_get_char(input))
-        == G_UNICODE_CONNECT_PUNCTUATION) {
-        return TRUE;
-    } else {
-        return FALSE;
-    }
-}
-
-/*
- * UnicodeConnectorPunctuation ::
- *     any character in the Unicode category “Connector punctuation (Pc)”
- */
-static gboolean unicode_connector_punctuation_match_save(gchar **input_p,
-                                                         GString *buffer) {
-    if (unicode_connector_punctuation_is_first(*input_p)) {
-        char_consume_save(input_p, buffer);
-        return TRUE;
-    } else {
-        return FALSE;
-    }
-}
-
-#define CHARACTER_ZWNJ_TEXT "\u200C"
-#define CHARACTER_ZWJ_TEXT "\u200D"
-
-gboolean identifier_part_is_first(gchar *input) {
-    return identifier_start_is_first(input)
-           || unicode_combining_mark_is_first(input)
-           || unicode_digit_is_first(input)
-           || unicode_connector_punctuation_is_first(input)
-           || text_is_first(input, CHARACTER_ZWNJ_TEXT)
-           || text_is_first(input, CHARACTER_ZWJ_TEXT);
-}
-
-/*
- * IdentifierPart ::
- *     IdentifierStart
- *     UnicodeCombiningMark
- *     UnicodeDigit
- *     UnicodeConnectorPunctuation
- *     <ZWNJ>
- *     <ZWJ>
- */
-static gboolean identifier_part_match_save_value(gchar **input_p,
-                                                 GString *buffer) {
-    return identifier_start_match_save_value(input_p, buffer)
-           || unicode_combining_mark_match_save(input_p, buffer)
-           || unicode_digit_match_save(input_p, buffer)
-           || unicode_connector_punctuation_match_save(input_p, buffer)
-           || text_match_save(input_p, CHARACTER_ZWNJ_TEXT, buffer)
-           || text_match_save(input_p, CHARACTER_ZWJ_TEXT, buffer);
-}
-
-static DEFINE_MATCH_ANY_SAVE_FUNC(identifier_part_match_any_save_value,
-                                  identifier_part_match_save_value)
-
-gboolean identifier_is_first(gchar *input) {
-    return identifier_start_is_first(input);
-}
-
-/*
- * NONSTANDARD:
- * IdentifierName is merged into Identifier
- * Identifier ::
- *     IdentifierStart IdentifierPart*
- * Identifier is not ReservedWord
- */
-token_t *identifier(gchar **input_p) {
-
-    GString *string = g_string_new(NULL);
-    if (identifier_start_match_save_value(input_p, string)) {
-        identifier_part_match_any_save_value(input_p, string);
-        return token_new_gstring(TOKEN_LEXICAL_IDENTIFIER, string);
-    }
-
-    g_string_free(string, TRUE);
-    return error_new_lexical(ERROR_LEXICAL_IDENTIFIER, *input_p);
-}
-
 static char *PUNCTUATORS[] = {
         "++",
         "+=",
@@ -705,22 +715,29 @@ DEFINE_TOKEN_GET_ID_FUNC(div_punctuator)
 
 DEFINE_TOKEN_IS_TOKEN_WITH_ID_FUNC(div_punctuator)
 
+/*
+ * NullLiteral ::
+ *     null
+ */
+
 #define TEXT_NULL "null"
 
 gboolean null_literal_is_first(gchar *input) {
     return text_match(&input, TEXT_NULL) && !identifier_part_is_first(input);
 }
 
-/*
- * NullLiteral ::
- *     null
- */
 token_t *null_literal(gchar **input_p) {
 
     return_token_if_match_text(input_p, TEXT_NULL, TOKEN_LEXICAL_NULL_LITERAL)
 
     return error_new_lexical(ERROR_LEXICAL_NULL_LITERAL, *input_p);
 }
+
+/*
+ * BooleanLiteral ::
+ *     true
+ *     false
+ */
 
 #define TEXT_TRUE "true"
 #define TEXT_FALSE "false"
@@ -734,11 +751,6 @@ static DEFINE_PRIMITIVE_NEW_FUNC_WITH_TYPE(boolean, gboolean)
 
 static DEFINE_PRIMITIVE_CLONE_FUNC_FUNC_WITH_TYPE(boolean, gboolean)
 
-/*
- * BooleanLiteral ::
- *     true
- *     false
- */
 token_t *boolean_literal(gchar **input_p) {
 
     if (text_match(input_p, TEXT_TRUE)) {
@@ -751,6 +763,30 @@ token_t *boolean_literal(gchar **input_p) {
 
     return error_new_lexical(ERROR_LEXICAL_BOOLEAN_LITERAL, *input_p);
 }
+
+/*
+ * NONSTANDARD:
+ * Doesn't allow ".1", or "1.".
+ * DecimalLiteral ::
+ *     DecimalDigit+ (. DecimalDigit+)? (e|E (+|-)? DecimalDigit+)?
+ *
+ * STANDARD:
+ * DecimalLiteral ::
+ *     (0|NonZeroDigit DecimalDigit*) (. DecimalDigit*)? ExponentPart?
+ *     . DecimalDigit+ ExponentPart?
+ * DecimalDigit :: one of
+ *     0 1 2 3 4 5 6 7 8 9
+ * NonZeroDigit :: one of
+ *     1 2 3 4 5 6 7 8 9
+ * ExponentPart ::
+ *     ExponentIndicator SignedInteger
+ * ExponentIndicator ::
+ *     e|E
+ * SignedInteger ::
+ *     DecimalDigits
+ *     + DecimalDigits
+ *     - DecimalDigits
+ */
 
 static gboolean decimal_digit_is_first(gchar *input) {
     return chars_is_first(input, "0123456789");
@@ -789,29 +825,6 @@ static gdouble *number_new_parse_integer(gchar *input, gchar *input_end,
 
 DEFINE_PRIMITIVE_CLONE_FUNC_FUNC_WITH_TYPE(number, gdouble)
 
-/*
- * NONSTANDARD:
- * Doesn't allow ".1", or "1.".
- * DecimalLiteral ::
- *     DecimalDigit+ (. DecimalDigit+)? (e|E (+|-)? DecimalDigit+)?
- *
- * STANDARD:
- * DecimalLiteral ::
- *     (0|NonZeroDigit DecimalDigit*) (. DecimalDigit*)? ExponentPart?
- *     . DecimalDigit+ ExponentPart?
- * DecimalDigit :: one of
- *     0 1 2 3 4 5 6 7 8 9
- * NonZeroDigit :: one of
- *     1 2 3 4 5 6 7 8 9
- * ExponentPart ::
- *     ExponentIndicator SignedInteger
- * ExponentIndicator ::
- *     e|E
- * SignedInteger ::
- *     DecimalDigits
- *     + DecimalDigits
- *     - DecimalDigits
- */
 static token_t *decimal_literal(gchar **input_p) {
 
     do {
@@ -840,6 +853,14 @@ static token_t *decimal_literal(gchar **input_p) {
     return error_new_lexical(ERROR_LEXICAL_NUMERIC_LITERAL_DECIMAL, *input_p);
 }
 
+/*
+ * BinaryIntegerLiteral ::
+ *     0b BinaryDigit+
+ *     0B BinaryDigit+
+ * BinaryDigit :: one of
+ *     0 1
+ */
+
 #define TEXT_BINARY_INTEGER_PREFIX_1 "0b"
 #define TEXT_BINARY_INTEGER_PREFIX_2 "0B"
 
@@ -854,13 +875,6 @@ static gboolean binary_digit_match(gchar **input_p) {
 
 static DEFINE_MATCH_MULTIPLE_FUNC(binary_digit_match)
 
-/*
- * BinaryIntegerLiteral ::
- *     0b BinaryDigit+
- *     0B BinaryDigit+
- * BinaryDigit :: one of
- *     0 1
- */
 static token_t *binary_integer_literal(gchar **input_p) {
 
     if (text_match(input_p, TEXT_BINARY_INTEGER_PREFIX_1)
@@ -876,6 +890,14 @@ static token_t *binary_integer_literal(gchar **input_p) {
     return error_new_lexical(ERROR_LEXICAL_NUMERIC_LITERAL_BINARY, *input_p);
 }
 
+/*
+ * OctalIntegerLiteral ::
+ *     0x OctalDigit+
+ *     0X OctalDigit+
+ * OctalDigit :: one of
+ *     0 1 2 3 4 5 6 7
+ */
+
 #define TEXT_OCTAL_INTEGER_PREFIX_1 "0o"
 #define TEXT_OCTAL_INTEGER_PREFIX_2 "0O"
 
@@ -890,13 +912,6 @@ static gboolean octal_digit_match(gchar **input_p) {
 
 static DEFINE_MATCH_MULTIPLE_FUNC(octal_digit_match)
 
-/*
- * OctalIntegerLiteral ::
- *     0x OctalDigit+
- *     0X OctalDigit+
- * OctalDigit :: one of
- *     0 1 2 3 4 5 6 7
- */
 static token_t *octal_integer_literal(gchar **input_p) {
 
     if (text_match(input_p, TEXT_OCTAL_INTEGER_PREFIX_1)
@@ -911,6 +926,14 @@ static token_t *octal_integer_literal(gchar **input_p) {
 
     return error_new_lexical(ERROR_LEXICAL_NUMERIC_LITERAL_OCTAL, *input_p);
 }
+
+/*
+ * HexIntegerLiteral ::
+ *     0x HexDigit+
+ *     0X HexDigit+
+ * HexDigit :: one of
+ *     0 1 2 3 4 5 6 7 8 9 a b c d e f A B C D E F
+ */
 
 #define TEXT_HEX_INTEGER_PREFIX_1 "0x"
 #define TEXT_HEX_INTEGER_PREFIX_2 "0X"
@@ -958,13 +981,6 @@ static gboolean hex_digit_match_save_value(gchar **input_p, guint *value_p) {
 
 static DEFINE_MATCH_MULTIPLE_FUNC(hex_digit_match)
 
-/*
- * HexIntegerLiteral ::
- *     0x HexDigit+
- *     0X HexDigit+
- * HexDigit :: one of
- *     0 1 2 3 4 5 6 7 8 9 a b c d e f A B C D E F
- */
 static token_t *hex_integer_literal(gchar **input_p) {
 
     if (text_match(input_p, TEXT_HEX_INTEGER_PREFIX_1)
@@ -989,6 +1005,13 @@ static token_t *hex_integer_literal(gchar **input_p) {
  * The SourceCharacter immediately following a NumericLiteral must not be an
  * IdentifierStart or DecimalDigit.
  */
+
+gboolean numeric_literal_is_first(gchar *input) {
+    // NOTE: Includes BinaryIntegerLiteral, OctalIntegerLiteral and
+    // HexIntegerLiteral.
+    return decimal_digit_is_first(input);
+}
+
 token_t *numeric_literal(gchar **input_p) {
 
     token_t *token;
@@ -1009,16 +1032,47 @@ token_t *numeric_literal(gchar **input_p) {
             ERROR_LEXICAL_NUMERIC_LITERAL_FOLLOWED_BY_IDENTIFIER, *input_p);
 }
 
-gboolean numeric_literal_is_first(gchar *input) {
-    // NOTE: Includes BinaryIntegerLiteral, OctalIntegerLiteral and
-    // HexIntegerLiteral.
-    return decimal_digit_is_first(input);
-}
-
 gdouble *numeric_literal_get_value(token_t *token) {
     g_assert(token->id == TOKEN_LEXICAL_NUMERIC_LITERAL);
     return (gdouble *) token->data;
 }
+
+/*
+ * StringLiteral ::
+ *     " DoubleStringCharacter+ "
+ *     ' SingleStringCharacter+ '
+ * DoubleStringCharacter ::
+ *     SourceCharacter but not one of " or \ or LineTerminator
+ *     \ EscapeSequence
+ *     \ LineTerminatorSequence
+ * SingleStringCharacter ::
+ *     SourceCharacter but not one of ' or \ or LineTerminator
+ *     \ EscapeSequence
+ *     \ LineTerminatorSequence
+ * EscapeSequence ::
+ *     CharacterEscapeSequence
+ * // NONSTANDARD
+ *     0
+ * // STANDARD
+ *     0 [lookahead ∉ DecimalDigit]
+ *     x HexDigit HexDigit
+ *     u HexDigit HexDigit HexDigit HexDigit
+ * CharacterEscapeSequence ::
+ *     SingleEscapeCharacter
+ *     NonEscapeCharacter
+ * SingleEscapeCharacter :: one of
+ *     ' " \ b f n r t v
+ * NonEscapeCharacter ::
+ *     SourceCharacter but not one of EscapeCharacter or LineTerminator
+ * EscapeCharacter ::
+ *     SingleEscapeCharacter
+ * // NONSTANDARD
+ *     0
+ * // STANDARD
+ *     DecimalDigit
+ *     x
+ *     u
+ */
 
 static gboolean hex_escape_sequence_match_save_value(gchar **input_p,
                                                      GString *buffer) {
@@ -1105,42 +1159,6 @@ gboolean string_literal_is_first(gchar *input) {
     return char_is_first(input, '"') || char_is_first(input, '\'');
 }
 
-/*
- * StringLiteral ::
- *     " DoubleStringCharacter+ "
- *     ' SingleStringCharacter+ '
- * DoubleStringCharacter ::
- *     SourceCharacter but not one of " or \ or LineTerminator
- *     \ EscapeSequence
- *     \ LineTerminatorSequence
- * SingleStringCharacter ::
- *     SourceCharacter but not one of ' or \ or LineTerminator
- *     \ EscapeSequence
- *     \ LineTerminatorSequence
- * EscapeSequence ::
- *     CharacterEscapeSequence
- * // NONSTANDARD
- *     0
- * // STANDARD
- *     0 [lookahead ∉ DecimalDigit]
- *     x HexDigit HexDigit
- *     u HexDigit HexDigit HexDigit HexDigit
- * CharacterEscapeSequence ::
- *     SingleEscapeCharacter
- *     NonEscapeCharacter
- * SingleEscapeCharacter :: one of
- *     ' " \ b f n r t v
- * NonEscapeCharacter ::
- *     SourceCharacter but not one of EscapeCharacter or LineTerminator
- * EscapeCharacter ::
- *     SingleEscapeCharacter
- * // NONSTANDARD
- *     0
- * // STANDARD
- *     DecimalDigit
- *     x
- *     u
- */
 token_t *string_literal(gchar **input_p) {
 
     do {

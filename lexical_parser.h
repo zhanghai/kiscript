@@ -14,13 +14,11 @@ token_t *lexical_token(gchar **input_p);
 
 gboolean white_space_is_first(gchar *input);
 
-token_t * white_space(gchar **input_p);
+token_t *white_space(gchar **input_p);
 
 gboolean line_terminator_is_first(gchar *input);
 
 token_t *line_terminator(gchar **input_p);
-
-token_t *line_terminator_sequence(gchar **input_p);
 
 gboolean multi_line_comment_is_first(gchar *input);
 
