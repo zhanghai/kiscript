@@ -110,25 +110,18 @@ gboolean white_space_is_first(gchar *input) {
  */
 token_t *white_space(gchar **input_p) {
 
-    // <TAB>
     return_token_if_match_char(input_p, CHARACTER_TAB_CHAR,
                                TOKEN_LEXICAL_WHITE_SPACE)
-    // <VT>
     return_token_if_match_char(input_p, CHARACTER_VT_CHAR,
                                TOKEN_LEXICAL_WHITE_SPACE)
-    // <FF>
     return_token_if_match_char(input_p, CHARACTER_FF_CHAR,
                                TOKEN_LEXICAL_WHITE_SPACE)
-    // <SP>
     return_token_if_match_char(input_p, CHARACTER_SP_CHAR,
                                TOKEN_LEXICAL_WHITE_SPACE)
-    // <NBSP>
     return_token_if_match_text(input_p, CHARACTER_NBSP_TEXT,
                                TOKEN_LEXICAL_WHITE_SPACE)
-    // <BOM>
     return_token_if_match_text(input_p, CHARACTER_BOM_TEXT,
                                TOKEN_LEXICAL_WHITE_SPACE)
-    // <USP>
     return_token_if_match(input_p, usp_match(input_p),
                           TOKEN_LEXICAL_WHITE_SPACE)
 
@@ -157,16 +150,12 @@ gboolean line_terminator_is_first(gchar *input) {
  */
 token_t *line_terminator(gchar **input_p) {
 
-    // <LF>
     return_token_if_match_char(input_p, CHARACTER_LF_CHAR,
                                TOKEN_LEXICAL_LINE_TERMINATOR)
-    // <CR>
     return_token_if_match_char(input_p, CHARACTER_CR_CHAR,
                                TOKEN_LEXICAL_LINE_TERMINATOR)
-    // <LS>
     return_token_if_match_text(input_p, CHARACTER_LS_TEXT,
                                TOKEN_LEXICAL_LINE_TERMINATOR)
-    // <PS>
     return_token_if_match_text(input_p, CHARACTER_PS_TEXT,
                                TOKEN_LEXICAL_LINE_TERMINATOR)
 
@@ -191,20 +180,15 @@ static gboolean line_terminator_sequence_match(gchar **input_p) {
  */
 token_t *line_terminator_sequence(gchar **input_p) {
 
-    // <LF>
     return_token_if_match_char(input_p, CHARACTER_LF_CHAR,
                                TOKEN_LEXICAL_LINE_TERMINATOR_SEQUENCE)
-    // <CR> <LF>
-    // NOTE: Promoted over <CR> for the lookahead of <CR>.
+    // NOTE: <CR> <LF> is Promoted over <CR> for the lookahead of <CR>.
     return_token_if_match_text(input_p, TEXT_CR_LF,
                                TOKEN_LEXICAL_LINE_TERMINATOR_SEQUENCE)
-    // <CR>
     return_token_if_match_char(input_p, CHARACTER_CR_CHAR,
                                TOKEN_LEXICAL_LINE_TERMINATOR_SEQUENCE)
-    // <LS>
     return_token_if_match_text(input_p, CHARACTER_LS_TEXT,
                                TOKEN_LEXICAL_LINE_TERMINATOR_SEQUENCE)
-    // <PS>
     return_token_if_match_text(input_p, CHARACTER_PS_TEXT,
                                TOKEN_LEXICAL_LINE_TERMINATOR_SEQUENCE)
 
