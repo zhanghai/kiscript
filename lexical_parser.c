@@ -105,26 +105,26 @@ gboolean white_space_is_first(gchar *input) {
 token_t *white_space(gchar **input_p) {
 
     // <TAB>
-    try_match_char_and_return_token(input_p, CHARACTER_TAB_CHAR,
-                                    TOKEN_LEXICAL_WHITE_SPACE)
-    // <VT>
-    try_match_char_and_return_token(input_p, CHARACTER_VT_CHAR,
-                                    TOKEN_LEXICAL_WHITE_SPACE)
-    // <FF>
-    try_match_char_and_return_token(input_p, CHARACTER_FF_CHAR,
-                                    TOKEN_LEXICAL_WHITE_SPACE)
-    // <SP>
-    try_match_char_and_return_token(input_p, CHARACTER_SP_CHAR,
-                                    TOKEN_LEXICAL_WHITE_SPACE)
-    // <NBSP>
-    try_match_text_and_return_token(input_p, CHARACTER_NBSP_TEXT,
-                                    TOKEN_LEXICAL_WHITE_SPACE)
-    // <BOM>
-    try_match_text_and_return_token(input_p, CHARACTER_BOM_TEXT,
-                                    TOKEN_LEXICAL_WHITE_SPACE)
-    // <USP>
-    try_match_and_return_token(input_p, usp_match(input_p),
+    return_token_if_match_char(input_p, CHARACTER_TAB_CHAR,
                                TOKEN_LEXICAL_WHITE_SPACE)
+    // <VT>
+    return_token_if_match_char(input_p, CHARACTER_VT_CHAR,
+                               TOKEN_LEXICAL_WHITE_SPACE)
+    // <FF>
+    return_token_if_match_char(input_p, CHARACTER_FF_CHAR,
+                               TOKEN_LEXICAL_WHITE_SPACE)
+    // <SP>
+    return_token_if_match_char(input_p, CHARACTER_SP_CHAR,
+                               TOKEN_LEXICAL_WHITE_SPACE)
+    // <NBSP>
+    return_token_if_match_text(input_p, CHARACTER_NBSP_TEXT,
+                               TOKEN_LEXICAL_WHITE_SPACE)
+    // <BOM>
+    return_token_if_match_text(input_p, CHARACTER_BOM_TEXT,
+                               TOKEN_LEXICAL_WHITE_SPACE)
+    // <USP>
+    return_token_if_match(input_p, usp_match(input_p),
+                          TOKEN_LEXICAL_WHITE_SPACE)
 
     // TODO: Error!
     return NULL;
@@ -153,17 +153,17 @@ gboolean line_terminator_is_first(gchar *input) {
 token_t *line_terminator(gchar **input_p) {
 
     // <LF>
-    try_match_char_and_return_token(input_p, CHARACTER_LF_CHAR,
-                                    TOKEN_LEXICAL_LINE_TERMINATOR)
+    return_token_if_match_char(input_p, CHARACTER_LF_CHAR,
+                               TOKEN_LEXICAL_LINE_TERMINATOR)
     // <CR>
-    try_match_char_and_return_token(input_p, CHARACTER_CR_CHAR,
-                                    TOKEN_LEXICAL_LINE_TERMINATOR)
+    return_token_if_match_char(input_p, CHARACTER_CR_CHAR,
+                               TOKEN_LEXICAL_LINE_TERMINATOR)
     // <LS>
-    try_match_text_and_return_token(input_p, CHARACTER_LS_TEXT,
-                                    TOKEN_LEXICAL_LINE_TERMINATOR)
+    return_token_if_match_text(input_p, CHARACTER_LS_TEXT,
+                               TOKEN_LEXICAL_LINE_TERMINATOR)
     // <PS>
-    try_match_text_and_return_token(input_p, CHARACTER_PS_TEXT,
-                                    TOKEN_LEXICAL_LINE_TERMINATOR)
+    return_token_if_match_text(input_p, CHARACTER_PS_TEXT,
+                               TOKEN_LEXICAL_LINE_TERMINATOR)
 
     // TODO: Error!
     return NULL;
@@ -188,21 +188,21 @@ static gboolean line_terminator_sequence_match(gchar **input_p) {
 token_t *line_terminator_sequence(gchar **input_p) {
 
     // <LF>
-    try_match_char_and_return_token(input_p, CHARACTER_LF_CHAR,
-                                    TOKEN_LEXICAL_LINE_TERMINATOR_SEQUENCE)
+    return_token_if_match_char(input_p, CHARACTER_LF_CHAR,
+                               TOKEN_LEXICAL_LINE_TERMINATOR_SEQUENCE)
     // <CR> <LF>
     // NOTE: Promoted over <CR> for the lookahead of <CR>.
-    try_match_text_and_return_token(input_p, TEXT_CR_LF,
-                                    TOKEN_LEXICAL_LINE_TERMINATOR_SEQUENCE)
+    return_token_if_match_text(input_p, TEXT_CR_LF,
+                               TOKEN_LEXICAL_LINE_TERMINATOR_SEQUENCE)
     // <CR>
-    try_match_char_and_return_token(input_p, CHARACTER_CR_CHAR,
-                                    TOKEN_LEXICAL_LINE_TERMINATOR_SEQUENCE)
+    return_token_if_match_char(input_p, CHARACTER_CR_CHAR,
+                               TOKEN_LEXICAL_LINE_TERMINATOR_SEQUENCE)
     // <LS>
-    try_match_text_and_return_token(input_p, CHARACTER_LS_TEXT,
-                                    TOKEN_LEXICAL_LINE_TERMINATOR_SEQUENCE)
+    return_token_if_match_text(input_p, CHARACTER_LS_TEXT,
+                               TOKEN_LEXICAL_LINE_TERMINATOR_SEQUENCE)
     // <PS>
-    try_match_text_and_return_token(input_p, CHARACTER_PS_TEXT,
-                                    TOKEN_LEXICAL_LINE_TERMINATOR_SEQUENCE)
+    return_token_if_match_text(input_p, CHARACTER_PS_TEXT,
+                               TOKEN_LEXICAL_LINE_TERMINATOR_SEQUENCE)
 
     // TODO: Error!
     return NULL;
@@ -715,8 +715,8 @@ gboolean div_punctuator_is_first(gchar *input) {
 token_t *div_punctuator(gchar **input_p) {
 
     for (gsize i = 0; i < G_N_ELEMENTS(DIV_PUNCTUATORS); ++i) {
-        try_match_text_and_return_token(input_p, DIV_PUNCTUATORS[i],
-                                        TOKEN_LEXICAL_DIV_PUNCTUATOR)
+        return_token_if_match_text(input_p, DIV_PUNCTUATORS[i],
+                                   TOKEN_LEXICAL_DIV_PUNCTUATOR)
     }
 
     // TODO: Error!
@@ -735,8 +735,7 @@ gboolean null_literal_is_first(gchar *input) {
  */
 token_t *null_literal(gchar **input_p) {
 
-    try_match_text_and_return_token(input_p, TEXT_NULL,
-                                    TOKEN_LEXICAL_NULL_LITERAL)
+    return_token_if_match_text(input_p, TEXT_NULL, TOKEN_LEXICAL_NULL_LITERAL)
 
     // TODO: Error!
     return NULL;

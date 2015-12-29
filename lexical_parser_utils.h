@@ -71,7 +71,7 @@ gboolean text_array_is_match(gchar *input, gchar **text_array,
         return token_name((input_p));\
     }
 
-#define try_match_and_return_token(input_p, match, token_id) \
+#define return_token_if_match(input_p, match, token_id) \
     { \
         char *input_old = *(input_p); \
         if ((match)) { \
@@ -80,12 +80,12 @@ gboolean text_array_is_match(gchar *input, gchar **text_array,
         } \
     }
 
-#define try_match_char_and_return_token(input_p, token_char, token_id) \
-    try_match_and_return_token((input_p), char_match((input_p), (token_char)), \
+#define return_token_if_match_char(input_p, token_char, token_id) \
+    return_token_if_match((input_p), char_match((input_p), (token_char)), \
                                (token_id))
 
-#define try_match_text_and_return_token(input_p, token_text, token_id) \
-    try_match_and_return_token((input_p), text_match((input_p), (token_text)), \
+#define return_token_if_match_text(input_p, token_text, token_id) \
+    return_token_if_match((input_p), text_match((input_p), (token_text)), \
                                (token_id))
 
 
