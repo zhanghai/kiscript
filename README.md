@@ -10,4 +10,3 @@ ECMAScript, kept simple.
 - No `in`.
 - For each with `for ( : )`.
 
-<font color=gray size=72>I am a contributor now~</font>
