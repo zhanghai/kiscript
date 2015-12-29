@@ -24,19 +24,8 @@ gboolean token_get(GPtrArray *input, gsize position, token_t **token_p) {
     }
 }
 
-gboolean token_consume_no_free(GPtrArray *input, gsize *position_p) {
+gboolean token_consume(GPtrArray *input, gsize *position_p) {
     if (g_ptr_array_in_range(input, *position_p)) {
-        ++(*position_p);
-        return TRUE;
-    } else {
-        return FALSE;
-    }
-}
-
-gboolean token_consume_free_recursive(GPtrArray *input, gsize *position_p) {
-    if (g_ptr_array_in_range(input, *position_p)) {
-        token_free_recursive(token_get_unchecked(input, *position_p));
-        token_set_unchecked(input, *position_p, NULL);
         ++(*position_p);
         return TRUE;
     } else {
@@ -53,7 +42,12 @@ gboolean token_is_first_punctuator(GPtrArray *input, gsize position,
 
 gboolean token_match_free_punctuator(GPtrArray *input, gsize *position_p,
                                      punctuator_id_t punctuator_id) {
-    return token_is_first_punctuator(input, *position_p,
-                                     punctuator_id)
-           && token_consume_free(input, position_p);
+    return token_is_first_punctuator(input, *position_p, punctuator_id)
+           && token_consume(input, position_p);
+}
+
+gboolean token_tokenize(GPtrArray *input, gsize *position_p,
+                        tokenize_func_t tokenize_func, token_t **token_p) {
+    *token_p = tokenize_func(input, position_p);
+    return !error_is_error(*token_p);
 }

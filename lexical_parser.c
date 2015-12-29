@@ -361,15 +361,11 @@ token_t *keyword(gchar **input_p) {
     return NULL;
 }
 
-keyword_id_t *keyword_get_id(token_t *token) {
-    g_assert(token->id == TOKEN_LEXICAL_KEYWORD);
-    return (keyword_id_t *) token->data;
-}
+DEFINE_TOKEN_IS_TOKEN_FUNC(keyword, TOKEN_LEXICAL_KEYWORD)
 
-gboolean keyword_is_keyword_with_id(token_t *token, keyword_id_t keyword_id) {
-    return token->id == TOKEN_LEXICAL_KEYWORD
-           && *keyword_get_id(token) == keyword_id;
-}
+DEFINE_TOKEN_GET_ID_FUNC(keyword)
+
+DEFINE_TOKEN_IS_TOKEN_WITH_ID_FUNC(keyword)
 
 // Strict mode
 static char *FUTURE_RESERVED_WORDS[] = {
@@ -417,16 +413,12 @@ token_t *future_reserved_word(gchar **input_p) {
     return NULL;
 }
 
-future_reserved_word_id_t *future_reserved_word_get_id(token_t *token) {
-    g_assert(token->id == TOKEN_LEXICAL_FUTURE_RESERVED_WORD);
-    return (future_reserved_word_id_t *) token->data;
-}
+DEFINE_TOKEN_IS_TOKEN_FUNC(future_reserved_word,
+                           TOKEN_LEXICAL_FUTURE_RESERVED_WORD)
 
-gboolean future_reserved_word_is_future_reserved_word_with_id(token_t *token,
-        future_reserved_word_id_t future_reserved_word_id) {
-    return token->id == TOKEN_LEXICAL_FUTURE_RESERVED_WORD
-           && *future_reserved_word_get_id(token) == future_reserved_word_id;
-}
+DEFINE_TOKEN_GET_ID_FUNC(future_reserved_word)
+
+DEFINE_TOKEN_IS_TOKEN_WITH_ID_FUNC(future_reserved_word)
 
 static gboolean unicode_letter_is_first(gchar *input) {
     switch (g_unichar_type(g_utf8_get_char(input))) {

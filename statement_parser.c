@@ -46,43 +46,30 @@ gboolean block_is_first(GPtrArray *input, gsize position) {
 }
 
 /*
- * Block -> StatementList?
+ * Block - Statement*
  *
  * GRAMMAR:
  * Block :
- *     { StatementList? }
+ *     { Statement* }
  */
 token_t *block(GPtrArray *input, gsize *position_p) {
 
-    token_t *token;
-    do {
-        if (token_match_free_punctuator(input, position_p,
-                                        PUNCTUATOR_CURLY_BRACE_LEFT)) {
-            token_t *statement_list_token = NULL;
-            if (!token_match_free_punctuator(input, position_p,
-                                             PUNCTUATOR_CURLY_BRACE_RIGHT)) {
-                statement_list_token = statement_list(input, position_p);
-                if (!token_match_free_punctuator(input, position_p,
-                        PUNCTUATOR_CURLY_BRACE_RIGHT)) {
-                    break;
-                }
-            }
-            token = token_new_no_text_no_data(TOKEN_STATEMENT_BLOCK);
-            if (statement_list_token) {
-                token_add_child(token, statement_list_token);
-            }
-            return token;
+    if (!token_match_free_punctuator(input, position_p,
+                                    PUNCTUATOR_CURLY_BRACE_LEFT)) {
+        return error_new_no_text(ERROR_STATEMENT_BLOCK_CURLY_BRACE_LEFT);
+    }
+
+    token_t *block_token = token_new_no_text_no_data(TOKEN_STATEMENT_BLOCK);
+    while (!token_match_free_punctuator(input, position_p,
+                                        PUNCTUATOR_CURLY_BRACE_RIGHT)) {
+
+        token_t *statement_token;
+        if (!token_tokenize(input, position_p, statement, &statement_token)) {
+            token_free(&block_token);
+            return error_new_no_text(ERROR_STATEMENT_BLOCK_STATEMENT);
         }
-    } while (FALSE);
+        token_add_child(block_token, statement_token);
+    }
 
-    // TODO: Error!
-    return NULL;
-}
-
-token_t *statement_list(GPtrArray *input, gsize *position_p) {
-
-    // TODO
-
-    // TODO: Error!
-    return NULL;
+    return block_token;
 }

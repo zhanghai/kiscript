@@ -15,7 +15,7 @@
 // PrimaryExpression :
 //     this
 //     Identifier
-//     Literal
+//     Literal : NullLiteral|BooleanLiteral|NumericLiteral|StringLiteral
 //     ArrayLiteral
 //     ObjectLiteral
 //     ( Expression )
@@ -23,17 +23,13 @@ token_t *primary_expression(GPtrArray *input, gsize *position_p) {
 
     token_t *token;
     if (token_get(input, *position_p, &token)) {
-        if (keyword_is_keyword_with_id(token, KEYWORD_THIS)) {
-            return token;
-        }
-        if (token->id == TOKEN_LEXICAL_IDENTIFIER) {
-            return token;
-        }
-        if (token->id == TOKEN_LEXICAL_NULL_LITERAL
+        if (keyword_is_keyword_with_id(token, KEYWORD_THIS)
+            || token->id == TOKEN_LEXICAL_IDENTIFIER
+            || token->id == TOKEN_LEXICAL_NULL_LITERAL
             || token->id == TOKEN_LEXICAL_BOOLEAN_LITERAL
             || token->id == TOKEN_LEXICAL_NUMERIC_LITERAL
             || token->id == TOKEN_LEXICAL_STRING_LITERAL) {
-            return token;
+            return token_clone(token);
         }
         return_token_if_is_first(input, position_p, array_literal)
         return_token_if_is_first(input, position_p, object_literal)

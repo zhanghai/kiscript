@@ -73,9 +73,11 @@ gboolean keyword_is_first(gchar *input);
 
 token_t *keyword(gchar **input_p);
 
-keyword_id_t *keyword_get_id(token_t *token);
+DECLARE_TOKEN_IS_TOKEN_FUNC(keyword)
 
-gboolean keyword_is_keyword_with_id(token_t *token, keyword_id_t keyword_id);
+DECLARE_TOKEN_GET_ID_FUNC(keyword)
+
+DECLARE_TOKEN_IS_TOKEN_WITH_ID_FUNC(keyword)
 
 typedef enum {
     FUTURE_RESERVED_WORD_YIELD,
@@ -100,10 +102,11 @@ gboolean future_reserved_word_is_first(gchar *input);
 
 token_t *future_reserved_word(gchar **input_p);
 
-future_reserved_word_id_t *future_reserved_word_get_id(token_t *token);
+DECLARE_TOKEN_IS_TOKEN_FUNC(future_reserved_word)
 
-gboolean future_reserved_word_is_future_reserved_word_with_id(token_t *token,
-        future_reserved_word_id_t future_reserved_word_id);
+DECLARE_TOKEN_GET_ID_FUNC(future_reserved_word)
+
+DECLARE_TOKEN_IS_TOKEN_WITH_ID_FUNC(future_reserved_word)
 
 typedef enum {
     PUNCTUATOR_INCREMENT,

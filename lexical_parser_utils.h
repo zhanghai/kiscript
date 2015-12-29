@@ -119,11 +119,4 @@ gboolean text_array_is_match(gchar *input, gchar **text_array,
         } \
     }
 
-#define DEFINE_ENUM_NEW(enum_name) \
-    enum_name##_t *enum_name##_new(enum_name##_t value) { \
-        enum_name##_t *value_p = g_new(enum_name##_t, 1); \
-        *value_p = value; \
-        return value_p; \
-    }
-
 #endif //KISCRIPT_LEXICAL_PARSER_UTILS_H
