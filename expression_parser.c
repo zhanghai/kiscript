@@ -3,6 +3,7 @@
 // All Rights Reserved.
 //
 
+#include <stdio.h>
 #include "expression_parser.h"
 
 #include "lexical_parser.h"
@@ -70,8 +71,29 @@ gboolean array_literal_is_first(GPtrArray *input, gsize position) {
  * GRAMMAR:
  * TODO: Grammar.
  */
+
+//#define CHARACTER_ELISION ','
 token_t *array_literal(GPtrArray *input, gsize *position_t) {
     // TODO
+
+    while (/*not ended*/1) {
+        if (/*begin with ElementList*/1) {
+            tokenize_and_return_if_is_first(input, position_t, element_list)
+        }
+        else if (/*begin with CHARACTER_ELISION*/1) {
+            /*move pointer to read next token*/
+        }
+    }
+
+    return NULL;
+}
+
+gboolean element_list_is_first(GPtrArray *input, gsize position) {
+    /*return blahblah... */return 0;
+}
+
+token_t *element_list(GPtrArray *input, gsize *position_t) {
+
     return NULL;
 }
 

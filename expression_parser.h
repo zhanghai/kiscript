@@ -29,4 +29,8 @@ token_t *conditional_expression(GPtrArray *input, gsize *position_t);
 
 token_t *conditional_expression_is_first(GPtrArray *input, gsize position);
 
+token_t *element_list(GPtrArray *input, gsize *position_t);
+
+gboolean element_list_is_first(GPtrArray *input, gsize position);
+
 #endif //KISCRIPT_EXPRESSION_PARSER_H
