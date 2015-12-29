@@ -14,11 +14,17 @@ gboolean token_consume_no_free(GPtrArray *input, gsize *position_p);
 
 gboolean token_consume(GPtrArray *input, gsize *position_p);
 
+gboolean token_is_first_keyword(GPtrArray *input, gsize position,
+                                keyword_id_t keyword_id);
+
+gboolean token_match_keyword(GPtrArray *input, gsize *position_p,
+                             keyword_id_t keyword_id);
+
 gboolean token_is_first_punctuator(GPtrArray *input, gsize position,
                                    punctuator_id_t punctuator_id);
 
-gboolean token_match_free_punctuator(GPtrArray *input, gsize *position_p,
-                                     punctuator_id_t punctuator_id);
+gboolean token_match_punctuator(GPtrArray *input, gsize *position_p,
+                                punctuator_id_t punctuator_id);
 
 
 typedef token_t *(*tokenize_func_t)(GPtrArray *input, gsize *position_p);
