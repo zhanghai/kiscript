@@ -603,8 +603,8 @@ token_t *identifier(gchar **input_p) {
     GString *string = g_string_new(NULL);
     if (identifier_start_match_save_value(input_p, string)) {
         identifier_part_match_any_save_value(input_p, string);
-        return token_new_strndup_gstring(TOKEN_LEXICAL_IDENTIFIER, input_old,
-                                         *input_p, string);
+        return token_new_gstring(TOKEN_LEXICAL_IDENTIFIER, input_old,
+                                 *input_p, string);
     }
 
     // TODO: Error!
@@ -1190,8 +1190,8 @@ token_t *string_literal(gchar **input_p) {
         GString *string = g_string_new(NULL);
         if (string_character_match_save(input_p, quote, string)
             && char_match(input_p, quote)) {
-            return token_new_strndup_gstring(TOKEN_LEXICAL_STRING_LITERAL,
-                                             input_old, *input_p, string);
+            return token_new_gstring(TOKEN_LEXICAL_STRING_LITERAL,
+                                     input_old, *input_p, string);
         }
         g_string_free(string, TRUE);
     } while (FALSE);

@@ -30,45 +30,31 @@ typedef enum {
 
 typedef struct {
     token_id_t id;
-    gchar *text;
     gpointer data;
     clone_func_t data_clone_func;
     free_func_t data_free_func;
     GPtrArray *children;
 } token_t;
 
-token_t *token_init(token_t *token, token_id_t id, gchar *text, gpointer data,
-                    clone_func_t data_clone_func, free_func_t data_free_func);
+token_t * token_new(token_id_t id, gpointer data, clone_func_t data_clone_func,
+                    free_func_t data_free_func);
 
-token_t * token_new(token_id_t id, gchar *text, gpointer data,
-                    clone_func_t data_clone_func, free_func_t data_free_func);
+token_t *token_new_gstring(token_id_t id, GString *string);
 
-token_t *token_new_strndup(token_id_t id, gchar *text, gchar *text_end,
-                           gpointer data, clone_func_t data_clone_func,
-                           free_func_t data_free_func);
-
-token_t *token_new_strndup_gstring(token_id_t id, gchar *text, gchar *text_end,
-                                   GString *string);
-
-token_t *token_new_no_data(token_id_t id, gchar *text);
-
-token_t *token_new_strndup_no_data(token_id_t id, gchar *text, gchar *text_end);
-
-token_t *token_new_no_text(token_id_t id, gpointer data,
-                           clone_func_t data_clone_func,
-                           free_func_t data_free_func);
-
-token_t *token_new_no_text_no_data(token_id_t id);
+token_t *token_new_no_data(token_id_t id);
 
 token_t *token_clone(token_t *token);
 
-void token_final(token_t *token);
-
-void token_free_no_nullify(token_t *token_p);
-
-void token_free(token_t **token_p);
+DECLARE_FREE_FUNCS(token)
 
 void token_add_child(token_t *token, token_t *child);
+
+
+GPtrArray *token_list_new();
+
+GPtrArray *token_list_clone(GPtrArray *token_list);
+
+DECLARE_FREE_FUNCS_WITH_TYPE(token_list, GPtrArray);
 
 
 #define DECLARE_TOKEN_IS_TOKEN_FUNC(token_name) \
@@ -109,61 +95,24 @@ typedef struct {
     error_id_t id;
     gboolean is_lexical;
     union {
-        gchar *lexical_input;
-        GPtrArray *syntactic_input;
-    };
+        gchar *lexical;
+        GPtrArray *syntactic;
+    } input;
     gsize position;
 } error_info_t;
 
-error_info_t *error_info_init_lexical(error_info_t *error_info, error_id_t id,
-                                      gchar *input, gsize position) {
-    error_info->id = id;
-    error_info->is_lexical = TRUE;
-    error_info->lexical_input = input;
-    error_info->position = position;
-    return error_info;
-}
-
-error_info_t *error_info_init_syntactic(error_info_t *error_info, error_id_t id,
-                                        GPtrArray *input, gsize position) {
-    error_info->id = id;
-    error_info->is_lexical = FALSE;
-    error_info->syntactic_input = input;
-    error_info->position = position;
-    return error_info;
-}
-
-static error_info_t *error_info_alloc() {
-    return g_new(error_info_t, 1);
-}
-
 error_info_t *error_info_new_lexical(error_id_t id, gchar *input,
-                                     gsize position) {
-    return error_info_init_lexical(error_info_alloc(), id, input, position);
-}
+                                     gsize position);
 
 error_info_t *error_info_new_syntactic(error_id_t id, GPtrArray *input,
-                                       gsize position) {
-    return error_info_init_syntactic(error_info_alloc(), id, input, position);
-}
+                                       gsize position);
 
-void error_info_final(error_info_t *error_info) {
-    if (error_info->is_lexical) {
-        g_free(error_info->lexical_input);
-    } else {
-        // STOPSHIP: FIXME: Write token_data_clone_func_t
-        for (gsize i = 0; i < error_info->syntactic_input->len; ++i) {
+DECLARE_FREE_FUNCS(error_info)
 
-        }
-    }
-}
-
-void error_info_free
 
 token_t *error_new(error_id_t error_id, gchar *text);
 
-token_t *error_new_strndup(error_id_t error_id, gchar *text,
-                           gchar *text_end);
+token_t *error_new_strndup(error_id_t error_id, gchar *text, gchar *text_end);
 
 token_t *error_new_no_text(error_id_t error_id);
 
