@@ -18,6 +18,8 @@ gboolean object_literal_is_first(GPtrArray *input, gsize position);
 
 token_t *object_literal(GPtrArray *input, gsize *position_t);
 
+token_t *assignment_expression(GPtrArray *input, gsize *position_p);
+
 token_t *expression(GPtrArray *input, gsize *position_t);
 
 #endif //KISCRIPT_EXPRESSION_PARSER_H

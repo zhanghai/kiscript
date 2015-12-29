@@ -71,7 +71,7 @@ gboolean text_array_is_match(gchar *input, gchar **text_array,
                              gsize text_array_length);
 
 
-#define return_token_if_is_first(input_p, token_name) \
+#define tokenize_and_return_if_is_first(input_p, token_name) \
     if (token_name##_is_first(*(input_p))) { \
         return token_name((input_p));\
     }

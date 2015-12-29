@@ -5,6 +5,7 @@
 
 #include "lexical_parser.h"
 #include "syntactic_parser_utils.h"
+#include "parser.h"
 
 static token_t *token_get_unchecked(GPtrArray *input, gsize position) {
     return g_ptr_array_index(input, position);
@@ -22,6 +23,17 @@ gboolean token_get(GPtrArray *input, gsize position, token_t **token_p) {
 gboolean token_consume(GPtrArray *input, gsize *position_p) {
     if (g_ptr_array_in_range(input, *position_p)) {
         ++(*position_p);
+        return TRUE;
+    } else {
+        return FALSE;
+    }
+}
+
+gboolean token_match_id_clone(GPtrArray *input, gsize *position_p,
+                              token_id_t token_id, token_t **token_clone_p) {
+    token_t *token;
+    if (token_get(input, *position_p, &token) && token->id == token_id) {
+        *token_clone_p = token_clone(token);
         return TRUE;
     } else {
         return FALSE;
@@ -52,10 +64,4 @@ gboolean token_match_punctuator(GPtrArray *input, gsize *position_p,
                                 punctuator_id_t punctuator_id) {
     return token_is_first_punctuator(input, *position_p, punctuator_id)
            && token_consume(input, position_p);
-}
-
-gboolean token_tokenize(GPtrArray *input, gsize *position_p,
-                        tokenize_func_t tokenize_func, token_t **token_p) {
-    *token_p = tokenize_func(input, position_p);
-    return !error_is_error(*token_p);
 }

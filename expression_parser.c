@@ -31,8 +31,8 @@ token_t *primary_expression(GPtrArray *input, gsize *position_p) {
             || token->id == TOKEN_LEXICAL_STRING_LITERAL) {
             return token_clone(token);
         }
-        return_token_if_is_first(input, position_p, array_literal)
-        return_token_if_is_first(input, position_p, object_literal)
+        tokenize_and_return_if_is_first(input, position_p, array_literal)
+        tokenize_and_return_if_is_first(input, position_p, object_literal)
         if (token_match_punctuator(input, position_p,
                                    PUNCTUATOR_PARENTHESIS_LEFT)) {
             token_t *expression_token = expression(input, position_p);
@@ -69,6 +69,11 @@ gboolean object_literal_is_first(GPtrArray *input, gsize position) {
 }
 
 token_t *object_literal(GPtrArray *input, gsize *position_t) {
+    // TODO
+    return NULL;
+}
+
+token_t *assignment_expression(GPtrArray *input, gsize *position_p) {
     // TODO
     return NULL;
 }

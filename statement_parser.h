@@ -18,4 +18,10 @@ gboolean variable_statement_is_first(GPtrArray *input, gsize position);
 
 token_t *variable_statement(GPtrArray *input, gsize *position_p);
 
+token_t *variable_declaration(GPtrArray *input, gsize *position_p);
+
+gboolean initializer_is_first(GPtrArray *input, gsize position);
+
+token_t *initializer(GPtrArray *input, gsize *position_p);
+
 #endif //KISCRIPT_STATEMENT_PARSER_H

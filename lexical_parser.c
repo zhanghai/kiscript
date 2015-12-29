@@ -45,22 +45,22 @@ GPtrArray *lexical_parse(gchar **input_p, token_t **error_p) {
  */
 token_t *lexical_token(gchar **input_p) {
 
-    return_token_if_is_first(input_p, keyword)
-    return_token_if_is_first(input_p, future_reserved_word)
-    return_token_if_is_first(input_p, null_literal)
-    return_token_if_is_first(input_p, boolean_literal)
+    tokenize_and_return_if_is_first(input_p, keyword)
+    tokenize_and_return_if_is_first(input_p, future_reserved_word)
+    tokenize_and_return_if_is_first(input_p, null_literal)
+    tokenize_and_return_if_is_first(input_p, boolean_literal)
     // NOTE:
     // {keyword,future_reserved_word,null_literal,boolean_literal}_is_first
     // checks identifier_part_is_first().
-    return_token_if_is_first(input_p, identifier)
-    return_token_if_is_first(input_p, numeric_literal)
-    return_token_if_is_first(input_p, string_literal)
-    return_token_if_is_first(input_p, punctuator)
-    return_token_if_is_first(input_p, div_punctuator)
-    return_token_if_is_first(input_p, white_space)
-    return_token_if_is_first(input_p, line_terminator)
-    return_token_if_is_first(input_p, single_line_comment)
-    return_token_if_is_first(input_p, multi_line_comment)
+    tokenize_and_return_if_is_first(input_p, identifier)
+    tokenize_and_return_if_is_first(input_p, numeric_literal)
+    tokenize_and_return_if_is_first(input_p, string_literal)
+    tokenize_and_return_if_is_first(input_p, punctuator)
+    tokenize_and_return_if_is_first(input_p, div_punctuator)
+    tokenize_and_return_if_is_first(input_p, white_space)
+    tokenize_and_return_if_is_first(input_p, line_terminator)
+    tokenize_and_return_if_is_first(input_p, single_line_comment)
+    tokenize_and_return_if_is_first(input_p, multi_line_comment)
 
     return error_new_lexical(ERROR_LEXICAL_LEXICAL_TOKEN, *input_p);
 }
