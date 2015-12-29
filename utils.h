@@ -31,11 +31,22 @@ typedef void (*free_func_t)(gpointer);
 
 #define DEFINE_FREE_FUNCS(name) DEFINE_FREE_FUNCS_WITH_TYPE(name, name##_t)
 
-#define DEFINE_ENUM_NEW(enum_name) \
-    enum_name##_t *enum_name##_new(enum_name##_t value) { \
-        enum_name##_t *value_p = g_new(enum_name##_t, 1); \
+#define DEFINE_PRIMITIVE_NEW_FUNC_WITH_TYPE(name, type_name) \
+    type_name *name##_new(type_name value) { \
+        type_name *value_p = g_new(type_name, 1); \
         *value_p = value; \
         return value_p; \
     }
+
+#define DEFINE_PRIMITIVE_CLONE_FUNC_FUNC_WITH_TYPE(name, type_name) \
+    gpointer name##_clone_func(gpointer value) { \
+        return name##_new(*(type_name *) value); \
+    }
+
+#define DEFINE_PRIMITIVE_NEW_FUNC(name) \
+        DEFINE_PRIMITIVE_NEW_FUNC_WITH_TYPE(name, name##_t)
+
+#define DEFINE_PRIMITIVE_FUNC_FUNC(name) \
+        DEFINE_PRIMITIVE_CLONE_FUNC_FUNC_WITH_TYPE(name, name##_t)
 
 #endif //KISCRIPT_UTILS_H_H

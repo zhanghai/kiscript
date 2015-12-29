@@ -107,22 +107,18 @@ DEFINE_FREE_FUNCS_WITH_TYPE(token_list, GPtrArray)
 
 
 static error_info_t *error_info_init_lexical(error_info_t *error_info,
-                                             error_id_t id, gchar *input,
-                                             gsize position) {
+                                             error_id_t id, gchar *position) {
     error_info->id = id;
     error_info->is_lexical = TRUE;
-    error_info->input.lexical = input;
-    error_info->position = position;
+    error_info->position.lexical = position;
     return error_info;
 }
 
 static error_info_t *error_info_init_syntactic(error_info_t *error_info,
-                                               error_id_t id, GPtrArray *input,
-                                               gsize position) {
+                                               error_id_t id, gsize position) {
     error_info->id = id;
     error_info->is_lexical = FALSE;
-    error_info->input.syntactic = input;
-    error_info->position = position;
+    error_info->position.syntactic = position;
     return error_info;
 }
 
@@ -130,22 +126,17 @@ static error_info_t *error_info_alloc() {
     return g_new(error_info_t, 1);
 }
 
-error_info_t *error_info_new_lexical(error_id_t id, gchar *input,
-                                     gsize position) {
-    return error_info_init_lexical(error_info_alloc(), id, input, position);
+error_info_t *error_info_new_lexical(error_id_t id, gchar *position) {
+    return error_info_init_lexical(error_info_alloc(), id, position);
 }
 
-error_info_t *error_info_new_syntactic(error_id_t id, GPtrArray *input,
-                                       gsize position) {
-    return error_info_init_syntactic(error_info_alloc(), id, input, position);
+error_info_t *error_info_new_syntactic(error_id_t id, gsize position) {
+    return error_info_init_syntactic(error_info_alloc(), id, position);
 }
 
 static void error_info_final(error_info_t *error_info) {
     if (error_info->is_lexical) {
-        g_free(error_info->input.lexical);
-        error_info->input.lexical = NULL;
-    } else {
-        token_list_free(&error_info->input.syntactic);
+        error_info->position.lexical = NULL;
     }
 }
 
@@ -156,20 +147,16 @@ static void error_info_free_func(gpointer error_info) {
     error_info_free(error_info);
 }
 
-token_t *error_new_lexical(error_id_t id, gchar *input, gchar *position) {
-    return token_new(TOKEN_ERROR, error_info_new_lexical(id, input,
-                                                         position - input),
-                     NULL, error_info_free_func);
+static token_t *error_new(error_info_t *info) {
+    return token_new(TOKEN_ERROR, info, NULL, error_info_free_func);
 }
 
-token_t *error_new_strndup(error_id_t error_id, gchar *text,
-                           gchar *text_end) {
-    return error_new(error_id, g_strndup(text, text_end - text));
+token_t *error_new_lexical(error_id_t id, gchar *position) {
+    return error_new(error_info_new_lexical(id, position));
 }
 
-token_t *error_new_token_list_position(error_id_t error_id,
-                                       GPtrArray *token_list, gsize position) {
-    return error_new(error_id, NULL);
+token_t *error_new_syntactic(error_id_t id, gsize position) {
+    return error_new(error_info_new_syntactic(id, position));
 }
 
 DEFINE_TOKEN_IS_TOKEN_FUNC(error, TOKEN_ERROR)

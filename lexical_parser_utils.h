@@ -72,21 +72,17 @@ gboolean text_array_is_match(gchar *input, gchar **text_array,
     }
 
 #define return_token_if_match(input_p, match, token_id) \
-    { \
-        char *input_old = *(input_p); \
-        if ((match)) { \
-            return token_new_strndup_no_data((token_id), input_old, \
-                                             *(input_p)); \
-        } \
-    }
+    if ((match)) { \
+        return token_new_no_data((token_id)); \
+    } \
 
 #define return_token_if_match_char(input_p, token_char, token_id) \
     return_token_if_match((input_p), char_match((input_p), (token_char)), \
-                               (token_id))
+                          (token_id))
 
 #define return_token_if_match_text(input_p, token_text, token_id) \
     return_token_if_match((input_p), text_match((input_p), (token_text)), \
-                               (token_id))
+                          (token_id))
 
 
 #define DEFINE_MATCH_ANY_FUNC(match_func) \

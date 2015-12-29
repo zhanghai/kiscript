@@ -10,11 +10,6 @@ static token_t *token_get_unchecked(GPtrArray *input, gsize position) {
     return g_ptr_array_index(input, position);
 }
 
-static void token_set_unchecked(GPtrArray *input, gsize position,
-                                token_t *token) {
-    g_ptr_array_index(input, position) = token;
-}
-
 gboolean token_get(GPtrArray *input, gsize position, token_t **token_p) {
     if (g_ptr_array_in_range(input, position)) {
         *token_p = token_get_unchecked(input, position);

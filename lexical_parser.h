@@ -8,7 +8,7 @@
 
 #include "parser.h"
 
-GPtrArray *lexical_token_list(gchar **input_p);
+GPtrArray *lexical_parse(gchar **input_p, token_t **error_p);
 
 token_t *lexical_token(gchar **input_p);
 

@@ -56,17 +56,19 @@ token_t *block(GPtrArray *input, gsize *position_p) {
 
     if (!token_match_free_punctuator(input, position_p,
                                     PUNCTUATOR_CURLY_BRACE_LEFT)) {
-        return error_new_no_text(ERROR_STATEMENT_BLOCK_CURLY_BRACE_LEFT);
+        return error_new_syntactic(ERROR_STATEMENT_BLOCK_CURLY_BRACE_LEFT,
+                                   *position_p);
     }
 
-    token_t *block_token = token_new_no_text_no_data(TOKEN_STATEMENT_BLOCK);
+    token_t *block_token = token_new_no_data(TOKEN_STATEMENT_BLOCK);
     while (!token_match_free_punctuator(input, position_p,
                                         PUNCTUATOR_CURLY_BRACE_RIGHT)) {
 
         token_t *statement_token;
         if (!token_tokenize(input, position_p, statement, &statement_token)) {
             token_free(&block_token);
-            return error_new_no_text(ERROR_STATEMENT_BLOCK_STATEMENT);
+            return error_new_syntactic(ERROR_STATEMENT_BLOCK_STATEMENT,
+                                       *position_p);
         }
         token_add_child(block_token, statement_token);
     }

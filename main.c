@@ -10,7 +10,8 @@
 
 int main() {
     char *input = "0x1234567890abcdefABCDEF \tabc\vfor";
-    lexical_token_list(&input);
+    token_t *error;
+    lexical_parse(&input, &error);
     printf("Hello, World!\n");
     return EXIT_SUCCESS;
 }

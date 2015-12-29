@@ -87,6 +87,7 @@ DECLARE_FREE_FUNCS_WITH_TYPE(token_list, GPtrArray);
 
 
 typedef enum {
+    ERROR_LEXICAL_LEXICAL_TOKEN,
     ERROR_STATEMENT_BLOCK_CURLY_BRACE_LEFT,
     ERROR_STATEMENT_BLOCK_STATEMENT
 } error_id_t;
@@ -96,25 +97,20 @@ typedef struct {
     gboolean is_lexical;
     union {
         gchar *lexical;
-        GPtrArray *syntactic;
-    } input;
-    gsize position;
+        gsize syntactic;
+    } position;
 } error_info_t;
 
-error_info_t *error_info_new_lexical(error_id_t id, gchar *input,
-                                     gsize position);
+error_info_t *error_info_new_lexical(error_id_t id, gchar *position);
 
-error_info_t *error_info_new_syntactic(error_id_t id, GPtrArray *input,
-                                       gsize position);
+error_info_t *error_info_new_syntactic(error_id_t id, gsize position);
 
 DECLARE_FREE_FUNCS(error_info)
 
 
-token_t *error_new(error_id_t error_id, gchar *text);
+token_t *error_new_lexical(error_id_t id, gchar *position);
 
-token_t *error_new_strndup(error_id_t error_id, gchar *text, gchar *text_end);
-
-token_t *error_new_no_text(error_id_t error_id);
+token_t *error_new_syntactic(error_id_t id, gsize position);
 
 DECLARE_TOKEN_IS_TOKEN_FUNC(error)
 
