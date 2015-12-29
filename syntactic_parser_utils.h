@@ -8,7 +8,7 @@
 
 #include "lexical_parser.h"
 
-gboolean token_get(GPtrArray *input, gsize position, token_t **token_p);
+token_t *token_get(GPtrArray *input, gsize position);
 
 gboolean token_consume(GPtrArray *input, gsize *position_p);
 

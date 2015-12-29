@@ -34,6 +34,7 @@
 token_t *statement(GPtrArray *input, gsize *position_p) {
 
     tokenize_and_return_if_is_first(input, position_p, block)
+    tokenize_and_return_if_is_first(input, position_p, variable_statement)
     // TODO
 
     // TODO: Error!
@@ -77,9 +78,7 @@ token_t *block(GPtrArray *input, gsize *position_p) {
 }
 
 gboolean variable_statement_is_first(GPtrArray *input, gsize position) {
-    token_t *token;
-    return token_get(input, position, &token)
-           && keyword_is_keyword_with_id(token, KEYWORD_VAR);
+    return token_is_first_keyword(input, position, KEYWORD_VAR);
 }
 
 /*
