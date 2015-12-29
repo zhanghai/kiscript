@@ -1065,7 +1065,8 @@ static gboolean hex_escape_sequence_match_save_value(gchar **input_p,
 
     gchar *input_old = *input_p;
     guint digit[2];
-    if (char_match(input_p, 'x') && hex_digit_match_save(input_p, &digit[0])
+    if (char_match(input_p, 'x')
+        && hex_digit_match_save_value(input_p, &digit[0])
         && hex_digit_match_save_value(input_p, &digit[1])) {
         gunichar char0 = 16 * digit[0] + digit[1];
         g_string_append_unichar(buffer, char0);
@@ -1082,7 +1083,8 @@ gboolean unicode_escape_sequence_match_save_value(gchar **input_p,
 
     gchar *input_old = *input_p;
     guint digit[4];
-    if (char_match(input_p, 'u') && hex_digit_match_save(input_p, &digit[0])
+    if (char_match(input_p, 'u')
+        && hex_digit_match_save_value(input_p, &digit[0])
         && hex_digit_match_save_value(input_p, &digit[1])
         && hex_digit_match_save_value(input_p, &digit[2])
         && hex_digit_match_save_value(input_p, &digit[3])) {
