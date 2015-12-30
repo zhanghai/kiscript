@@ -67,16 +67,21 @@ gboolean array_literal_is_first(GPtrArray *input, gsize position) {
  * TODO
  */
 
-//#define CHARACTER_ELISION ','
 token_t *array_literal(GPtrArray *input, gsize *position_t) {
     // TODO
 
-    while (/*not ended*/1) {
-        if (/*begin with ElementList*/1) {
-            tokenize_and_return_if_is_first(input, position_t, element_list)
+    token_t *array_literal_token_or_error = token_new_no_data(TOKEN_EXPRESSION_ARRAY_LITERAL);
+    while (!token_match_punctuator(input, position_t,
+                                   PUNCTUATOR_SQUARE_BRACKET_RIGHT)) {
+        if (element_list_is_first(input, *position_t)) {
+            tokenize_and_add_child_or_free_parent_and_return_error(input, position_t,
+                                                                   element_list, array_literal_token_or_error)
         }
-        else if (/*begin with CHARACTER_ELISION*/1) {
-            /*move pointer to read next token*/
+        else if (token_match_punctuator(input, position_t,
+                                        PUNCTUATOR_COMMA)) {
+            match_punctuator_or_free_and_return_error(input, position_t,
+                                                      PUNCTUATOR_PARENTHESIS_RIGHT, array_literal_token_or_error,
+                                                      ERROR_EXPRESSION_PRIMARY_EXPRESSION_PARENTHESIS_LEFT)
         }
     }
 
