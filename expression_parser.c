@@ -85,11 +85,14 @@ token_t *array_literal(GPtrArray *input, gsize *position_t) {
         }
     }
 
-    return NULL;
+    return array_literal_token_or_error;
 }
-
+//ElementList :
+//        Elision(opt) AssignmentExpression
+//        ElementList , Elision(opt) AssignmentExpression
 gboolean element_list_is_first(GPtrArray *input, gsize position) {
-    /*return blahblah... */return 0;
+    /*return blahblah... *///return 0;
+    return assignment_expression_is_first(input, position);
 }
 
 token_t *element_list(GPtrArray *input, gsize *position_t) {
@@ -107,12 +110,55 @@ token_t *object_literal(GPtrArray *input, gsize *position_t) {
     return NULL;
 }
 
+gboolean assignment_expression_is_first(GPtrArray *input, gsize position) {
+    /*return blahblah... *///return 0;
+    return conditional_expression_is_first(input, position)
+            || left_hand_side_expression_is_first(input, position);
+}
+
+//AssignmentExpression :
+//        ConditionalExpression
+//        LeftHandSideExpression = AssignmentExpression
+//        LeftHandSideExpression AssignmentOperator AssignmentExpression
 token_t *assignment_expression(GPtrArray *input, gsize *position_p) {
     // TODO
+    tokenize_and_return_if_is_first(input, position_p, conditional_expression)
+
+    token_t *left_hand_side_expression_token_or_error = token_new_no_data(TOKEN_EXPRESSION_ARRAY_LITERAL);
+    tokenize_and_add_child_or_free_parent_and_return_error(input, position_p,
+                                                           left_hand_side_expression,
+                                                           left_hand_side_expression_token_or_error)
+    if (token_match_punctuator(input, position_p,
+                               PUNCTUATOR_EQUALS_SIGN)) {
+        /*match AssignmentExpression, but how to wrap this assignment expression? */
+    } else {
+        /*match AssignmentOperator AssignmentExpression, but how to wrap this assignment expression? */
+    }
+
     return NULL;
 }
 
 token_t *expression(GPtrArray *input, gsize *position_t) {
+    // TODO
+    return NULL;
+}
+
+gboolean left_hand_side_expression_is_first(GPtrArray *input, gsize position) {
+    /*return blahblah... */return 0;
+
+}
+
+gboolean conditional_expression_is_first(GPtrArray *input, gsize position) {
+    /*return blahblah... */return 0;
+
+}
+
+token_t *left_hand_side_expression(GPtrArray *input, gsize *position_t) {
+    // TODO
+    return NULL;
+}
+
+token_t *conditional_expression(GPtrArray *input, gsize *position_t) {
     // TODO
     return NULL;
 }
