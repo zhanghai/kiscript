@@ -3,7 +3,6 @@
 // All Rights Reserved.
 //
 
-#include <stdio.h>
 #include "expression_parser.h"
 
 #include "lexical_parser.h"
@@ -44,15 +43,10 @@ token_t *primary_expression(GPtrArray *input, gsize *position_p) {
     if (token_match_punctuator(input, position_p,
                                PUNCTUATOR_PARENTHESIS_LEFT)) {
         token_t *expression_token_or_error = expression(input, position_p);
-        if (error_is_error(expression_token_or_error)) {
-            return expression_token_or_error;
-        }
-        if (!token_match_punctuator(input, position_p,
-                                   PUNCTUATOR_PARENTHESIS_RIGHT)) {
-            return error_new_syntactic(
-                    ERROR_EXPRESSION_PRIMARY_EXPRESSION_PARENTHESIS_LEFT,
-                    *position_p);
-        }
+        return_if_error(expression_token_or_error)
+        match_punctuator_or_free_and_return_error(input, position_p,
+                PUNCTUATOR_PARENTHESIS_RIGHT, expression_token_or_error,
+                ERROR_EXPRESSION_PRIMARY_EXPRESSION_PARENTHESIS_LEFT)
         return expression_token_or_error;
     }
 
@@ -66,10 +60,11 @@ gboolean array_literal_is_first(GPtrArray *input, gsize position) {
 }
 
 /*
- * TODO: AST Specification.
+ * AST:
+ * TODO
  *
  * GRAMMAR:
- * TODO: Grammar.
+ * TODO
  */
 
 //#define CHARACTER_ELISION ','
