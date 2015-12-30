@@ -39,6 +39,8 @@ token_t *statement(GPtrArray *input, gsize *position_p) {
     tokenize_and_return_if_is_first(input, position_p, variable_statement)
     // NONSTANDARD: No EmptyStatement.
     //tokenize_and_return_if_is_first(input, position_p, empty_statement)
+    tokenize_and_return_if_is_first(input, position_p, if_statement)
+    tokenize_and_return_if_is_first(input, position_p, do_while_statement)
     // TODO
 
     // TODO: Error!
@@ -221,9 +223,7 @@ token_t *empty_statement(GPtrArray *input, gsize *position_p) {
  */
 
 gboolean if_statement_is_first(GPtrArray *input, gsize position) {
-    return token_match_keyword(input, &position,KEYWORD_IF)
-           && token_is_first_punctuator(input, position,
-                                        PUNCTUATOR_PARENTHESIS_LEFT);
+    return token_is_first_keyword(input, position, KEYWORD_IF);
 }
 
 token_t *if_statement(GPtrArray *input, gsize *position_p) {
@@ -233,7 +233,8 @@ token_t *if_statement(GPtrArray *input, gsize *position_p) {
                                    *position_p);
     }
 
-    if (!token_match_keyword(input, position_p, KEYWORD_IF)) {
+    if (!token_match_punctuator(input, position_p,
+                                PUNCTUATOR_PARENTHESIS_LEFT)) {
         return error_new_syntactic(
                 ERROR_STATEMENT_IF_STATEMENT_PARENTHESIS_LEFT, *position_p);
     }
@@ -272,4 +273,71 @@ token_t *if_statement(GPtrArray *input, gsize *position_p) {
     }
 
     return if_statement_token;
+}
+
+/*
+ * AST:
+ * DoWhileStatement - Block Expression
+ *
+ * GRAMMAR:
+ * NONSTANDARD:
+ * Force Block instead of Statement; No trailing semicolon.
+ * DoWhileStatement :
+ *     do Block while ( Expression )
+ * STANDARD:
+ * DoWhileStatement :
+ *     do Statement while ( Expression );
+ */
+
+gboolean do_while_statement_is_first(GPtrArray *input, gsize position) {
+    return token_is_first_keyword(input, position, KEYWORD_DO);
+}
+
+token_t *do_while_statement(GPtrArray *input, gsize *position_p) {
+
+    if (!token_match_keyword(input, position_p, KEYWORD_DO)) {
+        return error_new_syntactic(ERROR_STATEMENT_DO_WHILE_STATEMENT_DO,
+                                   *position_p);
+    }
+
+    token_t *do_while_statement_token =
+            token_new_no_data(TOKEN_STATEMENT_DO_WHILE_STATEMENT);
+
+    token_t *block_token_or_error = block(input, position_p);
+    if (error_is_error(block_token_or_error)) {
+        token_free(&do_while_statement_token);
+        return block_token_or_error;
+    }
+    token_add_child(do_while_statement_token, block_token_or_error);
+
+    if (!token_match_keyword(input, position_p, KEYWORD_WHILE)) {
+        token_free(&do_while_statement_token);
+        return error_new_syntactic(ERROR_STATEMENT_DO_WHILE_STATEMENT_WHILE,
+                                   *position_p);
+    }
+
+    if (!token_match_punctuator(input, position_p,
+                                PUNCTUATOR_PARENTHESIS_LEFT)) {
+        token_free(&do_while_statement_token);
+        return error_new_syntactic(
+                ERROR_STATEMENT_DO_WHILE_STATEMENT_PARENTHESIS_LEFT,
+                *position_p);
+    }
+
+    token_t *expression_token_or_error = expression(input, position_p);
+    if (error_is_error(expression_token_or_error)) {
+        token_free(&do_while_statement_token);
+        return expression_token_or_error;
+    }
+    token_add_child(do_while_statement_token, expression_token_or_error);
+
+    if (!token_match_punctuator(input, position_p,
+                                PUNCTUATOR_PARENTHESIS_RIGHT)) {
+        token_free(&do_while_statement_token);
+        return error_new_syntactic(
+                ERROR_STATEMENT_DO_WHILE_STATEMENT_PARENTHESIS_RIGHT,
+                *position_p);
+    }
+
+    return do_while_statement_token;
 }
