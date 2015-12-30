@@ -522,7 +522,9 @@ static char *KEYWORDS[] = {
         "continue",
         "catch",
         "case",
-        "break"
+        "break",
+        "get",
+        "set"
 };
 
 gboolean keyword_is_first(gchar *input) {
