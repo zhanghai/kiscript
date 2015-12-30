@@ -41,6 +41,7 @@ token_t *statement(GPtrArray *input, gsize *position_p) {
     //tokenize_and_return_if_is_first(input, position_p, empty_statement)
     tokenize_and_return_if_is_first(input, position_p, if_statement)
     tokenize_and_return_if_is_first(input, position_p, do_while_statement)
+    tokenize_and_return_if_is_first(input, position_p, while_statement)
     // TODO
 
     // TODO: Error!
@@ -274,4 +275,47 @@ token_t *do_while_statement(GPtrArray *input, gsize *position_p) {
             ERROR_STATEMENT_DO_WHILE_STATEMENT_PARENTHESIS_RIGHT)
 
     return do_while_statement_token;
+}
+
+/*
+ * AST:
+ * WhileStatement - Expression Block
+ *
+ * GRAMMAR:
+ * NONSTANDARD:
+ * Force Block instead of Statement.
+ * WhileStatement :
+ *     while ( Expression ) Block
+ * STANDARD:
+ * WhileStatement :
+ *     if ( Expression ) Statement
+ */
+
+gboolean while_statement_is_first(GPtrArray *input, gsize position) {
+    return token_is_first_keyword(input, position, KEYWORD_WHILE);
+}
+
+token_t *while_statement(GPtrArray *input, gsize *position_p) {
+
+    match_keyword_or_return_error(input, position_p, KEYWORD_WHILE,
+                                  ERROR_STATEMENT_WHILE_STATEMENT_WHILE)
+
+    match_punctuator_or_return_error(input, position_p,
+            PUNCTUATOR_PARENTHESIS_LEFT,
+            ERROR_STATEMENT_WHILE_STATEMENT_PARENTHESIS_LEFT)
+
+    token_t *while_statement_token =
+            token_new_no_data(TOKEN_STATEMENT_WHILE_STATEMENT);
+
+    tokenize_and_add_child_or_free_parent_and_return_error(input, position_p,
+            expression, while_statement_token)
+
+    match_punctuator_or_free_and_return_error(input, position_p,
+            PUNCTUATOR_PARENTHESIS_RIGHT, while_statement_token,
+            ERROR_STATEMENT_WHILE_STATEMENT_PARENTHESIS_RIGHT)
+
+    tokenize_and_add_child_or_free_parent_and_return_error(input, position_p,
+            block, while_statement_token)
+
+    return while_statement_token;
 }
