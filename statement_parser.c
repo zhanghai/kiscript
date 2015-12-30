@@ -499,6 +499,19 @@ token_t *for_statement(GPtrArray *input, gsize *position_p) {
     return for_statement_token;
 }
 
+/*
+ * AST:
+ * ContinueStatement - Identifier?
+ *
+ * GRAMMAR:
+ * NONSTANDARD: Allow LineTerminator.
+ * ContinueStatement :
+ *     continue Identifier? ;
+ * STANDARD:
+ * ContinueStatement :
+ *     continue ([no LineTerminator here] Identifier)? ;
+ */
+
 gboolean continue_statement_is_first(GPtrArray *input, gsize position) {
     return token_is_first_keyword(input, position, KEYWORD_CONTINUE);
 }
@@ -525,6 +538,19 @@ token_t *continue_statement(GPtrArray *input, gsize *position_p) {
 
     return continue_statement_token;
 }
+
+/*
+ * AST:
+ * BreakStatement - Identifier?
+ *
+ * GRAMMAR:
+ * NONSTANDARD: Allow LineTerminator.
+ * BreakStatement :
+ *     break Identifier? ;
+ * STANDARD:
+ * BreakStatement :
+ *     break ([no LineTerminator here] Identifier)? ;
+ */
 
 gboolean break_statement_is_first(GPtrArray *input, gsize position) {
     return token_is_first_keyword(input, position, KEYWORD_BREAK);
