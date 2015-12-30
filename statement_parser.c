@@ -37,7 +37,8 @@ token_t *statement(GPtrArray *input, gsize *position_p) {
 
     tokenize_and_return_if_is_first(input, position_p, block)
     tokenize_and_return_if_is_first(input, position_p, variable_statement)
-    tokenize_and_return_if_is_first(input, position_p, empty_statement)
+    // NONSTANDARD: No EmptyStatement.
+    //tokenize_and_return_if_is_first(input, position_p, empty_statement)
     // TODO
 
     // TODO: Error!
