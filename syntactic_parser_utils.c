@@ -27,11 +27,29 @@ gboolean token_consume(GPtrArray *input, gsize *position_p) {
     }
 }
 
+gboolean token_is_first_id(GPtrArray *input, gsize position,
+                           token_id_t token_id) {
+    token_t *token = token_get_or_null(input, position);
+    return token && token->id == token_id;
+}
+
+gboolean token_match_id(GPtrArray *input, gsize *position_p,
+                        token_id_t token_id) {
+    token_t *token = token_get_or_null(input, *position_p);
+    if (token && token->id == token_id) {
+        token_consume(input, position_p);
+        return TRUE;
+    } else {
+        return FALSE;
+    }
+}
+
 gboolean token_match_id_clone(GPtrArray *input, gsize *position_p,
                               token_id_t token_id, token_t **token_clone_p) {
     token_t *token = token_get_or_null(input, *position_p);
     if (token && token->id == token_id) {
         *token_clone_p = token_clone(token);
+        token_consume(input, position_p);
         return TRUE;
     } else {
         return FALSE;

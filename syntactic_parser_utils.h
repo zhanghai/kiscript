@@ -12,6 +12,12 @@ token_t *token_get_or_null(GPtrArray *input, gsize position);
 
 gboolean token_consume(GPtrArray *input, gsize *position_p);
 
+gboolean token_is_first_id(GPtrArray *input, gsize position,
+                           token_id_t token_id);
+
+gboolean token_match_id(GPtrArray *input, gsize *position_p,
+                        token_id_t token_id);
+
 gboolean token_match_id_clone(GPtrArray *input, gsize *position_p,
                               token_id_t token_id, token_t **token_clone_p);
 

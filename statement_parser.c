@@ -619,3 +619,36 @@ token_t *return_statement(GPtrArray *input, gsize *position_p) {
 
     return return_statement_token;
 }
+
+/*
+ * AST:
+ * LabeledStatement - Identifier Statement
+ *
+ * GRAMMAR:
+ * LabeledStatement :
+ *     Identifier : Statement
+ */
+
+gboolean labeled_statement_is_first(GPtrArray *input, gsize position) {
+    return token_match_id(input, &position, TOKEN_LEXICAL_IDENTIFIER)
+           && token_is_first_punctuator(input, position, PUNCTUATOR_SEMICOLON);
+}
+
+token_t *labeled_statement(GPtrArray *input, gsize *position_p) {
+
+    token_t *labeled_statement_token = token_new_no_data(
+            TOKEN_STATEMENT_LABELED_STATEMENT);
+
+    match_token_id_clone_and_add_child_or_free_parent_and_return_error(input,
+            position_p, TOKEN_LEXICAL_IDENTIFIER, labeled_statement_token,
+            ERROR_STATEMENT_LABELED_STATEMENT_IDENTIFIER)
+
+    match_punctuator_or_free_and_return_error(input, position_p,
+            PUNCTUATOR_COLON, labeled_statement_token,
+            ERROR_STATEMENT_LABELED_STATEMENT_COLON)
+
+    tokenize_and_add_child_or_free_parent_and_return_error(input, position_p,
+            statement, labeled_statement_token)
+
+    return labeled_statement_token;
+}
