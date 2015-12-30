@@ -24,4 +24,12 @@ gboolean initializer_is_first(GPtrArray *input, gsize position);
 
 token_t *initializer(GPtrArray *input, gsize *position_p);
 
+gboolean empty_statement_is_first(GPtrArray *input, gsize position);
+
+token_t *empty_statement(GPtrArray *input, gsize *position_p);
+
+gboolean if_statement_is_first(GPtrArray *input, gsize position);
+
+token_t *if_statement(GPtrArray *input, gsize *position_p);
+
 #endif //KISCRIPT_STATEMENT_PARSER_H

@@ -15,3 +15,5 @@ Based on ECMAScript 5.0, with reference to ECMAScript 6.0, and some customizatio
 - No automatic semicolon insertion, so no restriction on no line terminator.
 - No `in`.
 - For each for `iterable` with `for ( : )`.
+- No `EmptyStatement`.
+- `Block` instead of `Statement` for `if` / `for` / `while` / `do while` body.

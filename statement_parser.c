@@ -18,7 +18,6 @@
  *     Block
  *     VariableStatement
  *     EmptyStatement
- *     ExpressionStatement
  *     IfStatement
  *     IterationStatement
  *     ContinueStatement
@@ -30,20 +29,19 @@
  *     ThrowStatement
  *     TryStatement
  *     DebuggerStatement
+ *     // Moved down for ambiguity
+ *     ExpressionStatement
  */
+
 token_t *statement(GPtrArray *input, gsize *position_p) {
 
     tokenize_and_return_if_is_first(input, position_p, block)
     tokenize_and_return_if_is_first(input, position_p, variable_statement)
+    tokenize_and_return_if_is_first(input, position_p, empty_statement)
     // TODO
 
     // TODO: Error!
     return NULL;
-}
-
-gboolean block_is_first(GPtrArray *input, gsize position) {
-    return token_is_first_punctuator(input, position,
-                                     PUNCTUATOR_CURLY_BRACE_LEFT);
 }
 
 /*
@@ -54,6 +52,12 @@ gboolean block_is_first(GPtrArray *input, gsize position) {
  * Block :
  *     { Statement* }
  */
+
+gboolean block_is_first(GPtrArray *input, gsize position) {
+    return token_is_first_punctuator(input, position,
+                                     PUNCTUATOR_CURLY_BRACE_LEFT);
+}
+
 token_t *block(GPtrArray *input, gsize *position_p) {
 
     if (!token_match_punctuator(input, position_p,
@@ -77,10 +81,6 @@ token_t *block(GPtrArray *input, gsize *position_p) {
     return block_token;
 }
 
-gboolean variable_statement_is_first(GPtrArray *input, gsize position) {
-    return token_is_first_keyword(input, position, KEYWORD_VAR);
-}
-
 /*
  * AST:
  * VariableStatement - VariableDeclaration+
@@ -89,6 +89,11 @@ gboolean variable_statement_is_first(GPtrArray *input, gsize position) {
  * VariableStatement :
  *     var VariableDeclaration (, VariableDeclaration)* ;
  */
+
+gboolean variable_statement_is_first(GPtrArray *input, gsize position) {
+    return token_is_first_keyword(input, position, KEYWORD_VAR);
+}
+
 token_t *variable_statement(GPtrArray *input, gsize *position_p) {
 
     if (!token_match_keyword(input, position_p, KEYWORD_VAR)) {
@@ -127,6 +132,7 @@ token_t *variable_statement(GPtrArray *input, gsize *position_p) {
  * VariableDeclaration :
  *     Identifier Initializer?
  */
+
 token_t *variable_declaration(GPtrArray *input, gsize *position_p) {
 
     token_t *variable_declaration_token =
@@ -153,10 +159,6 @@ token_t *variable_declaration(GPtrArray *input, gsize *position_p) {
     return variable_declaration_token;
 }
 
-gboolean initializer_is_first(GPtrArray *input, gsize position) {
-    return token_is_first_punctuator(input, position, PUNCTUATOR_EQUALS_SIGN);
-}
-
 /*
  * AST:
  * Initialiser = AssignmentExpression
@@ -165,6 +167,11 @@ gboolean initializer_is_first(GPtrArray *input, gsize position) {
  * Initialiser :
  *     = AssignmentExpression
  */
+
+gboolean initializer_is_first(GPtrArray *input, gsize position) {
+    return token_is_first_punctuator(input, position, PUNCTUATOR_EQUALS_SIGN);
+}
+
 token_t *initializer(GPtrArray *input, gsize *position_p) {
 
     if (!token_match_punctuator(input, position_p, PUNCTUATOR_EQUALS_SIGN)) {
@@ -173,4 +180,95 @@ token_t *initializer(GPtrArray *input, gsize *position_p) {
     }
 
     return assignment_expression(input, position_p);
+}
+
+/*
+ * AST:
+ * EmptyStatement = EmptyStatement
+ *
+ * GRAMMAR:
+ * EmptyStatement :
+ * ;
+ */
+
+gboolean empty_statement_is_first(GPtrArray *input, gsize position) {
+    return token_is_first_punctuator(input, position, PUNCTUATOR_SEMICOLON);
+}
+
+token_t *empty_statement(GPtrArray *input, gsize *position_p) {
+
+    if (!token_match_punctuator(input, position_p, PUNCTUATOR_SEMICOLON)) {
+        return error_new_syntactic(ERROR_STATEMENT_EMPTY_STATEMENT_SEMICOLON,
+                                   *position_p);
+    }
+
+    return token_new_no_data(TOKEN_STATEMENT_EMPTY_STATEMENT);
+}
+
+/*
+ * AST:
+ * IfStatement - Expression Block Block?
+ *
+ * GRAMMAR:
+ * NONSTANDARD:
+ * Force Block instead of Statement.
+ * IfStatement :
+ *     if ( Expression ) Block (else Block)?
+ * STANDARD:
+ * IfStatement :
+ *     if ( Expression ) Statement (else Statement)?
+ */
+
+gboolean if_statement_is_first(GPtrArray *input, gsize position) {
+    return token_match_keyword(input, &position,KEYWORD_IF)
+           && token_is_first_punctuator(input, position,
+                                        PUNCTUATOR_PARENTHESIS_LEFT);
+}
+
+token_t *if_statement(GPtrArray *input, gsize *position_p) {
+
+    if (!token_match_keyword(input, position_p, KEYWORD_IF)) {
+        return error_new_syntactic(ERROR_STATEMENT_IF_STATEMENT_IF,
+                                   *position_p);
+    }
+
+    if (!token_match_keyword(input, position_p, KEYWORD_IF)) {
+        return error_new_syntactic(
+                ERROR_STATEMENT_IF_STATEMENT_PARENTHESIS_LEFT, *position_p);
+    }
+
+    token_t *if_statement_token =
+            token_new_no_data(TOKEN_STATEMENT_IF_STATEMENT);
+
+    token_t *expression_token_or_error = expression(input, position_p);
+    if (error_is_error(expression_token_or_error)) {
+        token_free(&if_statement_token);
+        return expression_token_or_error;
+    }
+    token_add_child(if_statement_token, expression_token_or_error);
+
+    if (!token_match_punctuator(input, position_p,
+                                PUNCTUATOR_PARENTHESIS_RIGHT)) {
+        token_free(&if_statement_token);
+        return error_new_syntactic(
+                ERROR_STATEMENT_IF_STATEMENT_PARENTHESIS_RIGHT, *position_p);
+    }
+
+    token_t *block_token_or_error = block(input, position_p);
+    if (error_is_error(block_token_or_error)) {
+        token_free(&if_statement_token);
+        return block_token_or_error;
+    }
+    token_add_child(if_statement_token, block_token_or_error);
+
+    if (token_match_keyword(input, position_p, KEYWORD_ELSE)) {
+        token_t *block_else_token_or_error = block(input, position_p);
+        if (error_is_error(block_else_token_or_error)) {
+            token_free(&if_statement_token);
+            return block_else_token_or_error;
+        }
+        token_add_child(if_statement_token, block_else_token_or_error);
+    }
+
+    return if_statement_token;
 }
