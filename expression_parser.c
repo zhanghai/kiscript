@@ -108,9 +108,22 @@ gboolean object_literal_is_first(GPtrArray *input, gsize position) {
                                      PUNCTUATOR_CURLY_BRACE_LEFT);
 }
 
+//ObjectLiteral :
+//      { }
+//      { PropertyNameAndValueList }
+//      { PropertyNameAndValueList , }
 token_t *object_literal(GPtrArray *input, gsize *position_t) {
     // TODO
-    return NULL;
+    match_punctuator_or_return_error(input, position_t,
+                                     PUNCTUATOR_CURLY_BRACE_LEFT, ERROR_EXPRESSION_OBJECT_LITERAL)
+    token_t *object_literal_token_or_error = property_name_and_value_list(input, position_t);
+    return_if_error(object_literal_token_or_error);
+    token_match_punctuator(input, position_t,
+                           PUNCTUATOR_COMMA);
+    match_punctuator_or_return_error(input, position_t,
+                                     PUNCTUATOR_CURLY_BRACE_RIGHT, ERROR_EXPRESSION_OBJECT_LITERAL)
+
+    return object_literal_token_or_error;
 }
 
 gboolean left_hand_side_expression_is_left_hand_side_expression(
@@ -136,10 +149,11 @@ token_t *assignment_expression(GPtrArray *input, gsize *position_p) {
     // TODO
     tokenize_and_return_if_is_first(input, position_p, conditional_expression)
 
-    token_t *left_hand_side_expression_token_or_error = token_new_no_data(TOKEN_EXPRESSION_ARRAY_LITERAL);
+//    token_t *left_hand_side_expression_token_or_error = token_new_no_data(TOKEN_EXPRESSION_ARRAY_LITERAL);
+    token_t *assignment_expression_token_or_error = token_new_no_data(TOKEN_EXPRESSION_ASSIGNMENT_EXPRESSION);
     tokenize_and_add_child_or_free_parent_and_return_error(input, position_p,
                                                            left_hand_side_expression,
-                                                           left_hand_side_expression_token_or_error)
+                                                           assignment_expression_token_or_error)
     if (token_match_punctuator(input, position_p,
                                PUNCTUATOR_EQUALS_SIGN)) {
         /*match AssignmentExpression, but how to wrap this assignment expression? */
@@ -147,7 +161,7 @@ token_t *assignment_expression(GPtrArray *input, gsize *position_p) {
         /*match AssignmentOperator AssignmentExpression, but how to wrap this assignment expression? */
     }
 
-    return NULL;
+    return assignment_expression_token_or_error;
 }
 
 gboolean expression_is_first(GPtrArray *input, gsize position) {
@@ -178,4 +192,50 @@ token_t *left_hand_side_expression(GPtrArray *input, gsize *position_t) {
 token_t *conditional_expression(GPtrArray *input, gsize *position_t) {
     // TODO
     return NULL;
+}
+
+//PropertyNameAndValueList :
+//        PropertyAssignment
+//        PropertyNameAndValueList , PropertyAssignment
+token_t *property_name_and_value_list(GPtrArray *input, gsize *position_t) {
+
+    token_t *property_name_and_value_list_token_or_error = token_new_no_data(TOKEN_EXPRESSION_ASSIGNMENT_EXPRESSION);
+    while (property_assignment_is_first(input, position_t)) {
+        tokenize_and_add_child_or_free_parent_and_return_error(input, position_t, property_assignment,
+                                                               property_name_and_value_list_token_or_error);
+        if (!token_match_punctuator(input,position_t,PUNCTUATOR_COMMA))
+            break;
+//        match_punctuator_or_free_and_return_error(input, position_t,
+//                                                  PUNCTUATOR_COMMA, property_name_and_value_list_token_or_error,
+//                                                  ERROR_EXPRESSION_PROPERTY_NAME_AND_VALUE_LIST_COMMA)
+    }
+
+    return property_name_and_value_list_token_or_error;
+}
+
+//PropertyAssignment :
+//        PropertyName : AssignmentExpression
+//        get PropertyName ( ) { FunctionBody }
+//        set PropertyName ( PropertySetParameterList ) { FunctionBody }
+gboolean property_assignment_is_first(GPtrArray *input, gsize position) {
+    return token_is_first_keyword(input, position, KEYWORD_GET)
+           || token_is_first_keyword(input, position, KEYWORD_SET)
+           || property_name_is_first(input, position);
+}
+
+token_t *property_assignment(GPtrArray *input, gsize *position_t) {
+    if (token_match_keyword(input, position_t, KEYWORD_GET)) {
+        /* get PropertyName ( ) { FunctionBody } */
+    }
+    else if (token_match_keyword(input, position_t, KEYWORD_SET)) {
+        /* set PropertyName ( PropertySetParameterList ) { FunctionBody } */
+    }
+    else {
+        /* PropertyName : AssignmentExpression */
+    }
+    return NULL;
+}
+
+gboolean property_name_is_first(GPtrArray *input, gsize position) {
+    return FALSE;
 }

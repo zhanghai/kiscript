@@ -64,7 +64,9 @@ typedef enum {
     KEYWORD_CONTINUE,
     KEYWORD_CATCH,
     KEYWORD_CASE,
-    KEYWORD_BREAK
+    KEYWORD_BREAK,
+    KEYWORD_GET,
+    KEYWORD_SET
 } keyword_id_t;
 
 gboolean keyword_is_first(gchar *input);

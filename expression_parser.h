@@ -43,4 +43,8 @@ gboolean left_hand_side_expression_is_first(GPtrArray *input, gsize position);
 
 token_t *left_hand_side_expression(GPtrArray *input, gsize *position_t);
 
+token_t *property_name_and_value_list(GPtrArray *input, gsize *position_t);
+
+gboolean property_assignment_is_first(GPtrArray *input, gsize position);
+
 #endif //KISCRIPT_EXPRESSION_PARSER_H
