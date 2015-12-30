@@ -66,6 +66,7 @@ token_t *statement(GPtrArray *input, gsize *position_p) {
     tokenize_and_return_if_is_first(input, position_p, return_statement)
     tokenize_and_return_if_is_first(input, position_p, labeled_statement)
     tokenize_and_return_if_is_first(input, position_p, switch_statement)
+    tokenize_and_return_if_is_first(input, position_p, throw_statement)
     // TODO
 
     // TODO: Error!
@@ -785,4 +786,44 @@ token_t *default_clause(GPtrArray *input, gsize *position_p) {
     }
 
     return default_clause_token;
+}
+
+/*
+ * AST:
+ * ThrowStatement - Identifier?
+ *
+ * GRAMMAR:
+ * NONSTANDARD: Allow LineTerminator.
+ * ThrowStatement :
+ *     throw Identifier? ;
+ * STANDARD:
+ * ThrowStatement :
+ *     throw ([no LineTerminator here] Identifier)? ;
+ */
+
+gboolean throw_statement_is_first(GPtrArray *input, gsize position) {
+    return token_is_first_keyword(input, position, KEYWORD_THROW);
+}
+
+token_t *throw_statement(GPtrArray *input, gsize *position_p) {
+
+    match_keyword_or_return_error(input, position_p, KEYWORD_THROW,
+                                  ERROR_STATEMENT_THROW_STATEMENT_THROW)
+
+    token_t *throw_statement_token = token_new_no_data(
+            TOKEN_STATEMENT_THROW_STATEMENT);
+
+    if (!token_match_punctuator(input, position_p, PUNCTUATOR_SEMICOLON)) {
+
+        match_token_id_clone_and_add_child_or_free_parent_and_return_error(
+                input, position_p, TOKEN_LEXICAL_IDENTIFIER,
+                throw_statement_token,
+                ERROR_STATEMENT_THROW_STATEMENT_IDENTIFIER)
+
+        match_punctuator_or_free_and_return_error(input, position_p,
+                PUNCTUATOR_SEMICOLON, throw_statement_token,
+                ERROR_STATEMENT_THROW_STATEMENT_SEMICOLON)
+    }
+
+    return throw_statement_token;
 }
