@@ -52,4 +52,8 @@ gboolean break_statement_is_first(GPtrArray *input, gsize position);
 
 token_t *break_statement(GPtrArray *input, gsize *position_p);
 
+gboolean return_statement_is_first(GPtrArray *input, gsize position);
+
+token_t *return_statement(GPtrArray *input, gsize *position_p);
+
 #endif //KISCRIPT_STATEMENT_PARSER_H
