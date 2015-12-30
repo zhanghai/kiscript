@@ -64,6 +64,8 @@ token_t *statement(GPtrArray *input, gsize *position_p) {
     tokenize_and_return_if_is_first(input, position_p, continue_statement)
     tokenize_and_return_if_is_first(input, position_p, break_statement)
     tokenize_and_return_if_is_first(input, position_p, return_statement)
+    tokenize_and_return_if_is_first(input, position_p, labeled_statement)
+    tokenize_and_return_if_is_first(input, position_p, switch_statement)
     // TODO
 
     // TODO: Error!
