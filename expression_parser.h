@@ -22,6 +22,8 @@ gboolean left_hand_side_expression_is_left_hand_side_expression(token_t *token);
 
 token_t *assignment_expression(GPtrArray *input, gsize *position_p);
 
+gboolean expression_is_first(GPtrArray *input, gsize position);
+
 token_t *expression(GPtrArray *input, gsize *position_t);
 
 //============================================

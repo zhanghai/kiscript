@@ -150,6 +150,11 @@ token_t *assignment_expression(GPtrArray *input, gsize *position_p) {
     return NULL;
 }
 
+gboolean expression_is_first(GPtrArray *input, gsize position) {
+    // TODO
+    return FALSE;
+}
+
 token_t *expression(GPtrArray *input, gsize *position_t) {
     // TODO
     return NULL;

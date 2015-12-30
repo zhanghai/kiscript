@@ -31,6 +31,8 @@
  *     TryStatement
  *     DebuggerStatement
  *     // Moved down for ambiguity
+ *     // TODO: Is such moving down necessary, can we have a reliable
+ *     // expression_is_first()?
  *     ExpressionStatement
  * STANDARD:
  * Statement :
@@ -69,9 +71,8 @@ token_t *statement(GPtrArray *input, gsize *position_p) {
     tokenize_and_return_if_is_first(input, position_p, throw_statement)
     tokenize_and_return_if_is_first(input, position_p, try_statement)
     tokenize_and_return_if_is_first(input, position_p, debugger_statement)
-    // TODO
+    tokenize_and_return_if_is_first(input, position_p, expression_statement)
 
-    // TODO: Error!
     return NULL;
 }
 
@@ -189,7 +190,7 @@ token_t *initializer(GPtrArray *input, gsize *position_p) {
 
 /*
  * AST:
- * EmptyStatement = EmptyStatement
+ * EmptyStatement
  *
  * GRAMMAR:
  * EmptyStatement :
@@ -919,4 +920,44 @@ token_t *debugger_statement(GPtrArray *input, gsize *position_p) {
             ERROR_STATEMENT_DEBUGGER_STATEMENT_SEMICOLON)
 
     return token_new_no_data(TOKEN_STATEMENT_DEBUGGER_STATEMENT);
+}
+
+/*
+ * AST:
+ * ExpressionStatement - Expression
+ *
+ * GRAMMAR:
+ * ExpressionStatement :
+ *     [lookahead ∉ {{, function}] Expression ;
+ */
+
+gboolean expression_statement_is_first(GPtrArray *input, gsize position) {
+    return !token_is_first_punctuator(input, position,
+                                      PUNCTUATOR_CURLY_BRACE_LEFT)
+           && !token_is_first_keyword(input, position, KEYWORD_FUNCTION)
+           // TODO: Can we have a reliable expression_is_first()?
+           && expression_is_first(input, position);
+}
+
+token_t *expression_statement(GPtrArray *input, gsize *position_p) {
+
+    if (token_is_first_punctuator(input, *position_p,
+                                  PUNCTUATOR_CURLY_BRACE_LEFT)
+        || token_is_first_keyword(input, *position_p, KEYWORD_FUNCTION)) {
+        return error_new_syntactic(
+              ERROR_STATEMENT_EXPRESSION_STATEMENT_CURLY_BRACE_LFET_OR_FUNCTION,
+                *position_p);
+    }
+
+    token_t *expression_statement_token = token_new_no_data(
+            TOKEN_STATEMENT_EXPRESSION_STATEMENT);
+
+    tokenize_and_add_child_or_free_parent_and_return_error(input, position_p,
+            expression, expression_statement_token)
+
+    match_punctuator_or_free_and_return_error(input, position_p,
+            PUNCTUATOR_SEMICOLON, expression_statement_token,
+            ERROR_STATEMENT_EXPRESSION_STATEMENT_SEMICOLON)
+
+    return expression_statement_token;
 }
