@@ -68,6 +68,7 @@ token_t *statement(GPtrArray *input, gsize *position_p) {
     tokenize_and_return_if_is_first(input, position_p, switch_statement)
     tokenize_and_return_if_is_first(input, position_p, throw_statement)
     tokenize_and_return_if_is_first(input, position_p, try_statement)
+    tokenize_and_return_if_is_first(input, position_p, debugger_statement)
     // TODO
 
     // TODO: Error!
@@ -894,4 +895,28 @@ token_t *try_statement(GPtrArray *input, gsize *position_p) {
     }
 
     return try_statement_token;
+}
+
+/*
+ * AST:
+ * DebuggerStatement
+ *
+ * GRAMMAR:
+ * DebuggerStatement :
+ *     debugger ;
+ */
+
+gboolean debugger_statement_is_first(GPtrArray *input, gsize position) {
+    return token_is_first_keyword(input, position, KEYWORD_DEBUGGER);
+}
+
+token_t *debugger_statement(GPtrArray *input, gsize *position_p) {
+
+    match_keyword_or_return_error(input, position_p, KEYWORD_DEBUGGER,
+                                  ERROR_STATEMENT_DEBUGGER_STATEMENT_DEBUGGER)
+
+    match_punctuator_or_return_error(input, position_p, PUNCTUATOR_SEMICOLON,
+            ERROR_STATEMENT_DEBUGGER_STATEMENT_SEMICOLON)
+
+    return token_new_no_data(TOKEN_STATEMENT_DEBUGGER_STATEMENT);
 }
