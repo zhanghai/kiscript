@@ -27,13 +27,57 @@ gboolean token_is_first_punctuator(GPtrArray *input, gsize position,
 gboolean token_match_punctuator(GPtrArray *input, gsize *position_p,
                                 punctuator_id_t punctuator_id);
 
-typedef token_t *(*tokenize_func_t)(GPtrArray *input, gsize *position_p);
-
-
 #define tokenize_and_return_if_is_first(input, position_p, token_name) \
     if (token_name##_is_first((input), *(position_p))) { \
         return token_name((input), (position_p));\
     }
 
+#define tokenize_and_add_child_or_free_parent_and_return_error(input, \
+        position_p, tokenize_func, parent_token) \
+    { \
+        token_t *child_token_or_error = tokenize_func((input), (position_p)); \
+        if (error_is_error(child_token_or_error)) { \
+            token_free(&(parent_token)); \
+            return child_token_or_error; \
+        } \
+        token_add_child(parent_token, child_token_or_error); \
+    }
+
+#define match_token_id_clone_and_add_child_or_free_parent_and_return_error( \
+        input, position_p, token_id, parent_token, error_id) \
+    { \
+        token_t *child_token_clone; \
+        if (!token_match_id_clone((input), (position_p), (token_id), \
+                &child_token_clone)) { \
+            token_free(&parent_token); \
+            return error_new_syntactic((error_id), *(position_p)); \
+        } \
+        token_add_child((parent_token), child_token_clone); \
+    }
+
+#define match_keyword_or_return_error(input, position_p, keyword_id, error_id) \
+    if (!token_match_keyword((input), (position_p), (keyword_id))) { \
+        return error_new_syntactic((error_id), *(position_p)); \
+    }
+
+#define match_keyword_or_free_and_return_error(input, position_p, keyword_id, \
+        token_to_free, error_id) \
+    if (!token_match_keyword((input), (position_p), (keyword_id))) { \
+        token_free(&(token_to_free)); \
+        return error_new_syntactic((error_id), *(position_p)); \
+    }
+
+#define match_punctuator_or_return_error(input, position_p, punctuator_id, \
+    error_id) \
+    if (!token_match_punctuator((input), (position_p), (punctuator_id))) { \
+        return error_new_syntactic((error_id), *(position_p)); \
+    }
+
+#define match_punctuator_or_free_and_return_error(input, position_p, \
+        punctuator_id, token_to_free, error_id) \
+    if (!token_match_punctuator((input), (position_p), (punctuator_id))) { \
+        token_free(&(token_to_free)); \
+        return error_new_syntactic((error_id), *(position_p)); \
+    }
 
 #endif //KISCRIPT_SYNTACTIC_PARSER_UTILS_H

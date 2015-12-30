@@ -63,22 +63,17 @@ gboolean block_is_first(GPtrArray *input, gsize position) {
 
 token_t *block(GPtrArray *input, gsize *position_p) {
 
-    if (!token_match_punctuator(input, position_p,
-                                PUNCTUATOR_CURLY_BRACE_LEFT)) {
-        return error_new_syntactic(ERROR_STATEMENT_BLOCK_CURLY_BRACE_LEFT,
-                                   *position_p);
-    }
+    match_punctuator_or_return_error(input, position_p,
+                                     PUNCTUATOR_CURLY_BRACE_LEFT,
+                                     ERROR_STATEMENT_BLOCK_CURLY_BRACE_LEFT)
 
     token_t *block_token = token_new_no_data(TOKEN_STATEMENT_BLOCK);
     while (!token_match_punctuator(input, position_p,
                                    PUNCTUATOR_CURLY_BRACE_RIGHT)) {
 
-        token_t *statement_token_or_error = statement(input, position_p);
-        if (error_is_error(statement_token_or_error)) {
-            token_free(&block_token);
-            return statement_token_or_error;
-        }
-        token_add_child(block_token, statement_token_or_error);
+        tokenize_and_add_child_or_free_parent_and_return_error(input, position_p,
+                                                               statement,
+                                                               block_token)
     }
 
     return block_token;
@@ -99,30 +94,21 @@ gboolean variable_statement_is_first(GPtrArray *input, gsize position) {
 
 token_t *variable_statement(GPtrArray *input, gsize *position_p) {
 
-    if (!token_match_keyword(input, position_p, KEYWORD_VAR)) {
-        return error_new_syntactic(ERROR_STATEMENT_VARIABLE_STATEMENT_VAR,
-                                   *position_p);
-    }
+    match_keyword_or_return_error(input, position_p, KEYWORD_VAR,
+                                  ERROR_STATEMENT_VARIABLE_STATEMENT_VAR);
 
     token_t *variable_statement_token =
             token_new_no_data(TOKEN_STATEMENT_VARIABLE_STATEMENT);
 
     do {
-        token_t *variable_declaration_token_or_error =
-                variable_declaration(input, position_p);
-        if (error_is_error(variable_declaration_token_or_error)) {
-            token_free(&variable_statement_token);
-            return variable_declaration_token_or_error;
-        }
-        token_add_child(variable_statement_token,
-                        variable_declaration_token_or_error);
+        tokenize_and_add_child_or_free_parent_and_return_error(input,
+                position_p, variable_declaration, variable_statement_token)
 
     } while (token_match_punctuator(input, position_p, PUNCTUATOR_COMMA));
 
-    if (!token_match_punctuator(input, position_p, PUNCTUATOR_SEMICOLON)) {
-        return error_new_syntactic(ERROR_STATEMENT_VARIABLE_STATEMENT_SEMICOLON,
-                                   *position_p);
-    }
+    match_punctuator_or_free_and_return_error(input, position_p,
+            PUNCTUATOR_SEMICOLON, variable_statement_token,
+            ERROR_STATEMENT_VARIABLE_STATEMENT_SEMICOLON)
 
     return variable_statement_token;
 }
@@ -141,22 +127,13 @@ token_t *variable_declaration(GPtrArray *input, gsize *position_p) {
     token_t *variable_declaration_token =
             token_new_no_data(TOKEN_STATEMENT_VARIABLE_DECLARATION);
 
-    token_t *identifier_token;
-    if (!token_match_id_clone(input, position_p, TOKEN_LEXICAL_IDENTIFIER,
-                             &identifier_token)) {
-        token_free(&variable_declaration_token);
-        return error_new_syntactic(
-                ERROR_STATEMENT_VARIABLE_DECLARATION_IDENTIFIER, *position_p);
-    }
-    token_add_child(variable_declaration_token, identifier_token);
+    match_token_id_clone_and_add_child_or_free_parent_and_return_error(input,
+            position_p, TOKEN_LEXICAL_IDENTIFIER, variable_declaration_token,
+            ERROR_STATEMENT_VARIABLE_DECLARATION_IDENTIFIER)
 
     if (initializer_is_first(input, *position_p)) {
-        token_t *initializer_token_or_error = initializer(input, position_p);
-        if (error_is_error(initializer_token_or_error)) {
-            token_free(&variable_declaration_token);
-            return initializer_token_or_error;
-        }
-        token_add_child(variable_declaration_token, initializer_token_or_error);
+        tokenize_and_add_child_or_free_parent_and_return_error(input,
+                position_p, initializer, variable_declaration_token)
     }
 
     return variable_declaration_token;
@@ -177,10 +154,8 @@ gboolean initializer_is_first(GPtrArray *input, gsize position) {
 
 token_t *initializer(GPtrArray *input, gsize *position_p) {
 
-    if (!token_match_punctuator(input, position_p, PUNCTUATOR_EQUALS_SIGN)) {
-        return error_new_syntactic(ERROR_STATEMENT_INITIALIZER_EQUALS_SIGN,
-                                   *position_p);
-    }
+    match_punctuator_or_return_error(input, position_p, PUNCTUATOR_EQUALS_SIGN,
+                                     ERROR_STATEMENT_INITIALIZER_EQUALS_SIGN)
 
     return assignment_expression(input, position_p);
 }
@@ -200,10 +175,8 @@ gboolean empty_statement_is_first(GPtrArray *input, gsize position) {
 
 token_t *empty_statement(GPtrArray *input, gsize *position_p) {
 
-    if (!token_match_punctuator(input, position_p, PUNCTUATOR_SEMICOLON)) {
-        return error_new_syntactic(ERROR_STATEMENT_EMPTY_STATEMENT_SEMICOLON,
-                                   *position_p);
-    }
+    match_punctuator_or_return_error(input, position_p, PUNCTUATOR_SEMICOLON,
+                                     ERROR_STATEMENT_EMPTY_STATEMENT_SEMICOLON)
 
     return token_new_no_data(TOKEN_STATEMENT_EMPTY_STATEMENT);
 }
@@ -228,48 +201,31 @@ gboolean if_statement_is_first(GPtrArray *input, gsize position) {
 
 token_t *if_statement(GPtrArray *input, gsize *position_p) {
 
-    if (!token_match_keyword(input, position_p, KEYWORD_IF)) {
-        return error_new_syntactic(ERROR_STATEMENT_IF_STATEMENT_IF,
-                                   *position_p);
-    }
+    match_keyword_or_return_error(input, position_p, KEYWORD_IF,
+                                  ERROR_STATEMENT_IF_STATEMENT_IF)
 
-    if (!token_match_punctuator(input, position_p,
-                                PUNCTUATOR_PARENTHESIS_LEFT)) {
-        return error_new_syntactic(
-                ERROR_STATEMENT_IF_STATEMENT_PARENTHESIS_LEFT, *position_p);
-    }
+    match_punctuator_or_return_error(input, position_p,
+            PUNCTUATOR_PARENTHESIS_LEFT,
+            ERROR_STATEMENT_IF_STATEMENT_PARENTHESIS_LEFT)
 
     token_t *if_statement_token =
             token_new_no_data(TOKEN_STATEMENT_IF_STATEMENT);
 
-    token_t *expression_token_or_error = expression(input, position_p);
-    if (error_is_error(expression_token_or_error)) {
-        token_free(&if_statement_token);
-        return expression_token_or_error;
-    }
-    token_add_child(if_statement_token, expression_token_or_error);
+    tokenize_and_add_child_or_free_parent_and_return_error(input, position_p,
+                                                           expression,
+                                                           if_statement_token)
 
-    if (!token_match_punctuator(input, position_p,
-                                PUNCTUATOR_PARENTHESIS_RIGHT)) {
-        token_free(&if_statement_token);
-        return error_new_syntactic(
-                ERROR_STATEMENT_IF_STATEMENT_PARENTHESIS_RIGHT, *position_p);
-    }
+    match_punctuator_or_free_and_return_error(input, position_p,
+            PUNCTUATOR_PARENTHESIS_RIGHT, if_statement_token,
+            ERROR_STATEMENT_IF_STATEMENT_PARENTHESIS_RIGHT)
 
-    token_t *block_token_or_error = block(input, position_p);
-    if (error_is_error(block_token_or_error)) {
-        token_free(&if_statement_token);
-        return block_token_or_error;
-    }
-    token_add_child(if_statement_token, block_token_or_error);
+    tokenize_and_add_child_or_free_parent_and_return_error(input, position_p,
+                                                           block,
+                                                           if_statement_token)
 
     if (token_match_keyword(input, position_p, KEYWORD_ELSE)) {
-        token_t *block_else_token_or_error = block(input, position_p);
-        if (error_is_error(block_else_token_or_error)) {
-            token_free(&if_statement_token);
-            return block_else_token_or_error;
-        }
-        token_add_child(if_statement_token, block_else_token_or_error);
+        tokenize_and_add_child_or_free_parent_and_return_error(input,
+                position_p, block, if_statement_token)
     }
 
     return if_statement_token;
@@ -295,49 +251,28 @@ gboolean do_while_statement_is_first(GPtrArray *input, gsize position) {
 
 token_t *do_while_statement(GPtrArray *input, gsize *position_p) {
 
-    if (!token_match_keyword(input, position_p, KEYWORD_DO)) {
-        return error_new_syntactic(ERROR_STATEMENT_DO_WHILE_STATEMENT_DO,
-                                   *position_p);
-    }
+    match_keyword_or_return_error(input, position_p, KEYWORD_DO,
+                                  ERROR_STATEMENT_DO_WHILE_STATEMENT_DO)
 
     token_t *do_while_statement_token =
             token_new_no_data(TOKEN_STATEMENT_DO_WHILE_STATEMENT);
 
-    token_t *block_token_or_error = block(input, position_p);
-    if (error_is_error(block_token_or_error)) {
-        token_free(&do_while_statement_token);
-        return block_token_or_error;
-    }
-    token_add_child(do_while_statement_token, block_token_or_error);
+    tokenize_and_add_child_or_free_parent_and_return_error(input, position_p,
+            block, do_while_statement_token)
 
-    if (!token_match_keyword(input, position_p, KEYWORD_WHILE)) {
-        token_free(&do_while_statement_token);
-        return error_new_syntactic(ERROR_STATEMENT_DO_WHILE_STATEMENT_WHILE,
-                                   *position_p);
-    }
+    match_keyword_or_free_and_return_error(input, position_p, KEYWORD_WHILE,
+            do_while_statement_token, ERROR_STATEMENT_DO_WHILE_STATEMENT_WHILE)
 
-    if (!token_match_punctuator(input, position_p,
-                                PUNCTUATOR_PARENTHESIS_LEFT)) {
-        token_free(&do_while_statement_token);
-        return error_new_syntactic(
-                ERROR_STATEMENT_DO_WHILE_STATEMENT_PARENTHESIS_LEFT,
-                *position_p);
-    }
+    match_punctuator_or_free_and_return_error(input, position_p,
+            PUNCTUATOR_PARENTHESIS_LEFT, do_while_statement_token,
+            ERROR_STATEMENT_DO_WHILE_STATEMENT_PARENTHESIS_LEFT)
 
-    token_t *expression_token_or_error = expression(input, position_p);
-    if (error_is_error(expression_token_or_error)) {
-        token_free(&do_while_statement_token);
-        return expression_token_or_error;
-    }
-    token_add_child(do_while_statement_token, expression_token_or_error);
+    tokenize_and_add_child_or_free_parent_and_return_error(input, position_p,
+            expression, do_while_statement_token)
 
-    if (!token_match_punctuator(input, position_p,
-                                PUNCTUATOR_PARENTHESIS_RIGHT)) {
-        token_free(&do_while_statement_token);
-        return error_new_syntactic(
-                ERROR_STATEMENT_DO_WHILE_STATEMENT_PARENTHESIS_RIGHT,
-                *position_p);
-    }
+    match_punctuator_or_free_and_return_error(input, position_p,
+            PUNCTUATOR_PARENTHESIS_RIGHT, do_while_statement_token,
+            ERROR_STATEMENT_DO_WHILE_STATEMENT_PARENTHESIS_RIGHT)
 
     return do_while_statement_token;
 }
