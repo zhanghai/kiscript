@@ -40,4 +40,8 @@ gboolean while_statement_is_first(GPtrArray *input, gsize position);
 
 token_t *while_statement(GPtrArray *input, gsize *position_p);
 
+gboolean for_statement_is_first(GPtrArray *input, gsize position);
+
+token_t *for_statement(GPtrArray *input, gsize *position_p);
+
 #endif //KISCRIPT_STATEMENT_PARSER_H

@@ -14,10 +14,31 @@
  * TODO
  *
  * GRAMMAR:
+ * NONSTANDARD: No EmptyStatement or WithStatement
+ * Statement :
+ *     Block
+ *     VariableStatement
+ *     IfStatement
+ *     DoWhileStatement
+ *     WhileStatement
+ *     ForStatement
+ *     ForEachStatement
+ *     ContinueStatement
+ *     BreakStatement
+ *     ReturnStatement
+ *     LabelledStatement
+ *     SwitchStatement
+ *     ThrowStatement
+ *     TryStatement
+ *     DebuggerStatement
+ *     // Moved down for ambiguity
+ *     ExpressionStatement
+ * STANDARD:
  * Statement :
  *     Block
  *     VariableStatement
  *     EmptyStatement
+ *     ExpressionStatement
  *     IfStatement
  *     IterationStatement
  *     ContinueStatement
@@ -29,8 +50,6 @@
  *     ThrowStatement
  *     TryStatement
  *     DebuggerStatement
- *     // Moved down for ambiguity
- *     ExpressionStatement
  */
 
 token_t *statement(GPtrArray *input, gsize *position_p) {
@@ -318,4 +337,162 @@ token_t *while_statement(GPtrArray *input, gsize *position_p) {
             block, while_statement_token)
 
     return while_statement_token;
+}
+
+/*
+ * AST:
+ * ForStatement - (Expression|VariableDeclarationList|null) (Expression|null)
+ *         (Expression|null) Block
+ * ForEachStatement - (LeftHandSideExpression|VariableDeclaration) Expression
+ *         Block
+ *
+ * GRAMMAR:
+ * NONSTANDARD:
+ * Force Block instead of Statement.
+ * ForStatement :
+ *     for ( (Expression|var VariableDeclarationList)? ; Expression? ;
+ *             Expression? ) Block
+ *     for ( (LeftHandSideExpression|var VariableDeclaration) : Expression)
+ *             Block
+ * VariableDeclarationList:
+ *     VariableDeclaration (, VariableDeclaration)*
+ * STANDARD:
+ * ForStatement :
+ *     for ( ExpressionNoIn? ; Expressionopt ; Expression? ) Statement
+ *     for ( var VariableDeclarationListNoIn ; Expression? ; Expression? )
+ *             Statement
+ *     for ( LeftHandSideExpression in Expression ) Statement
+ *     for ( var VariableDeclarationNoIn in Expression ) Statement
+ */
+
+gboolean for_statement_is_first(GPtrArray *input, gsize position) {
+    return token_is_first_keyword(input, position, KEYWORD_FOR);
+}
+
+token_t *for_statement(GPtrArray *input, gsize *position_p) {
+
+    match_keyword_or_return_error(input, position_p, KEYWORD_FOR,
+                                  ERROR_STATEMENT_FOR_STATEMENT_FOR)
+
+    match_punctuator_or_return_error(input, position_p,
+            PUNCTUATOR_PARENTHESIS_LEFT,
+            ERROR_STATEMENT_FOR_STATEMENT_PARENTHESIS_LEFT)
+
+    token_t *for_statement_token =
+            token_new_no_data(TOKEN_STATEMENT_FOR_STATEMENT);
+
+    gboolean is_for_each = FALSE;
+
+    if (token_match_keyword(input, position_p, KEYWORD_VAR)) {
+
+        token_t *first_variable_declaration_token = variable_declaration(input,
+                position_p);
+        return_and_free_if_error(first_variable_declaration_token,
+                                 for_statement_token);
+
+        if (token_is_first_punctuator(input, *position_p, PUNCTUATOR_COMMA)) {
+
+            token_t *variable_declaration_list_token = token_new_no_data(
+                            TOKEN_STATEMENT_VARIABLE_DECLARATION_LIST);
+            token_add_child(for_statement_token,
+                            variable_declaration_list_token);
+            while (token_match_punctuator(input, position_p,
+                                          PUNCTUATOR_COMMA)) {
+                tokenize_and_add_child_or_free_grand_parent_and_return_error(
+                        input, position_p, variable_declaration,
+                        for_statement_token, variable_declaration_list_token)
+            }
+
+        } else {
+
+            if (token_is_first_punctuator(input, *position_p,
+                                          PUNCTUATOR_COLON)) {
+                token_add_child(for_statement_token,
+                                first_variable_declaration_token);
+                is_for_each = TRUE;
+
+            } else {
+
+                token_t *variable_declaration_list_token = token_new_no_data(
+                        TOKEN_STATEMENT_VARIABLE_DECLARATION_LIST);
+                token_add_child(variable_declaration_list_token,
+                                first_variable_declaration_token);
+                token_add_child(for_statement_token,
+                                variable_declaration_list_token);
+            }
+        }
+
+    } else {
+
+        tokenize_and_add_child_or_free_parent_and_return_error(input,
+                position_p, expression, for_statement_token)
+
+        if (token_is_first_punctuator(input, *position_p, PUNCTUATOR_COLON)) {
+            token_t *expression_token = token_get_child(for_statement_token, 0);
+            if (!left_hand_side_expression_is_left_hand_side_expression(
+                    expression_token)) {
+                token_free(&for_statement_token);
+                return error_new_syntactic(
+                   ERROR_STATEMENT_FOR_EACH_STATEMENT_LEFT_HAND_SIDE_EXPRESSION,
+                        *position_p);
+            }
+            is_for_each = TRUE;
+        }
+    }
+
+    if (is_for_each) {
+
+        for_statement_token->id = TOKEN_STATEMENT_FOR_EACH_STATEMENT;
+
+        // Already tested with token_is_first_punctuator().
+        token_consume(input, position_p);
+
+        tokenize_and_add_child_or_free_parent_and_return_error(input,
+                position_p, expression, for_statement_token)
+
+        match_punctuator_or_free_and_return_error(input, position_p,
+                PUNCTUATOR_PARENTHESIS_RIGHT, for_statement_token,
+                ERROR_STATEMENT_FOR_EACH_STATEMENT_PARENTHESIS_RIGHT);
+
+        tokenize_and_add_child_or_free_parent_and_return_error(input,
+                position_p, block, for_statement_token)
+
+    } else {
+
+        match_punctuator_or_free_and_return_error(input, position_p,
+                PUNCTUATOR_SEMICOLON, for_statement_token,
+                ERROR_STATEMENT_FOR_STATEMENT_FIRST_SEMICOLON)
+
+        if (!token_match_punctuator(input, position_p, PUNCTUATOR_SEMICOLON)) {
+
+            tokenize_and_add_child_or_free_parent_and_return_error(input,
+                    position_p, expression, for_statement_token)
+
+            match_punctuator_or_free_and_return_error(input, position_p,
+                    PUNCTUATOR_SEMICOLON, for_statement_token,
+                    ERROR_STATEMENT_FOR_STATEMENT_SECOND_SEMICOLON)
+
+        } else {
+            token_add_child(for_statement_token, NULL);
+        }
+
+        if (!token_match_punctuator(input, position_p,
+                                    PUNCTUATOR_PARENTHESIS_RIGHT)) {
+
+            tokenize_and_add_child_or_free_parent_and_return_error(input,
+                    position_p, expression, for_statement_token)
+
+            match_punctuator_or_free_and_return_error(input, position_p,
+                    PUNCTUATOR_PARENTHESIS_RIGHT, for_statement_token,
+                    ERROR_STATEMENT_FOR_STATEMENT_PARENTHESIS_RIGHT)
+
+        } else {
+            token_add_child(for_statement_token, NULL);
+        }
+
+        tokenize_and_add_child_or_free_parent_and_return_error(input,
+                position_p, block, for_statement_token)
+    }
+
+    return for_statement_token;
 }

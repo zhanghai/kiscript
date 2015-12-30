@@ -24,7 +24,7 @@
  */
 token_t *primary_expression(GPtrArray *input, gsize *position_p) {
 
-    token_t *token = token_get(input, *position_p);
+    token_t *token = token_get_or_null(input, *position_p);
     if (token) {
         if (keyword_is_keyword_with_id(token, KEYWORD_THIS)
             || token->id == TOKEN_LEXICAL_IDENTIFIER
@@ -87,16 +87,19 @@ token_t *array_literal(GPtrArray *input, gsize *position_t) {
 
     return array_literal_token_or_error;
 }
-//ElementList :
-//        Elision(opt) AssignmentExpression
-//        ElementList , Elision(opt) AssignmentExpression
+
+/*
+ * ElementList :
+ *        Elision? AssignmentExpression
+ *        ElementList , Elision? AssignmentExpression
+ */
+
 gboolean element_list_is_first(GPtrArray *input, gsize position) {
     /*return blahblah... *///return 0;
     return assignment_expression_is_first(input, position);
 }
 
 token_t *element_list(GPtrArray *input, gsize *position_t) {
-
     return NULL;
 }
 
@@ -110,16 +113,25 @@ token_t *object_literal(GPtrArray *input, gsize *position_t) {
     return NULL;
 }
 
+gboolean left_hand_side_expression_is_left_hand_side_expression(
+        token_t *token) {
+    // TODO
+    return FALSE;
+}
+
+/*
+ * AssignmentExpression :
+ *         ConditionalExpression
+ *         LeftHandSideExpression = AssignmentExpression
+ *         LeftHandSideExpression AssignmentOperator AssignmentExpression
+ */
+
 gboolean assignment_expression_is_first(GPtrArray *input, gsize position) {
     /*return blahblah... *///return 0;
     return conditional_expression_is_first(input, position)
             || left_hand_side_expression_is_first(input, position);
 }
 
-//AssignmentExpression :
-//        ConditionalExpression
-//        LeftHandSideExpression = AssignmentExpression
-//        LeftHandSideExpression AssignmentOperator AssignmentExpression
 token_t *assignment_expression(GPtrArray *input, gsize *position_p) {
     // TODO
     tokenize_and_return_if_is_first(input, position_p, conditional_expression)

@@ -8,7 +8,7 @@
 
 #include "lexical_parser.h"
 
-token_t *token_get(GPtrArray *input, gsize position);
+token_t *token_get_or_null(GPtrArray *input, gsize position);
 
 gboolean token_consume(GPtrArray *input, gsize *position_p);
 
@@ -55,6 +55,14 @@ gboolean token_match_punctuator(GPtrArray *input, gsize *position_p,
     { \
         token_t *child_token_or_error = tokenize_func((input), (position_p)); \
         return_and_free_if_error(child_token_or_error, parent_token) \
+        token_add_child(parent_token, child_token_or_error); \
+    }
+
+#define tokenize_and_add_child_or_free_grand_parent_and_return_error(input, \
+        position_p, tokenize_func, grand_parent_token, parent_token) \
+    { \
+        token_t *child_token_or_error = tokenize_func((input), (position_p)); \
+        return_and_free_if_error(child_token_or_error, grand_parent_token) \
         token_add_child(parent_token, child_token_or_error); \
     }
 

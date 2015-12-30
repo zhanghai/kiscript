@@ -80,6 +80,14 @@ void token_add_child(token_t *token, token_t *child) {
     g_ptr_array_add(token->children, child);
 }
 
+gboolean token_has_child(token_t *token, gsize position) {
+    return position < token->children->len;
+}
+
+token_t *token_get_child(token_t *token, gsize position) {
+    return g_ptr_array_index(token->children, position);
+}
+
 
 static void token_free_func(gpointer token) {
     if (token) {
