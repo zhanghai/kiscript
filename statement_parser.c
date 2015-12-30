@@ -21,8 +21,7 @@
  *     IfStatement
  *     DoWhileStatement
  *     WhileStatement
- *     ForStatement
- *     ForEachStatement
+ *     ForStatement|ForEachStatement
  *     ContinueStatement
  *     BreakStatement
  *     ReturnStatement
@@ -63,6 +62,7 @@ token_t *statement(GPtrArray *input, gsize *position_p) {
     tokenize_and_return_if_is_first(input, position_p, while_statement)
     tokenize_and_return_if_is_first(input, position_p, for_statement)
     tokenize_and_return_if_is_first(input, position_p, continue_statement)
+    tokenize_and_return_if_is_first(input, position_p, break_statement)
     // TODO
 
     // TODO: Error!
@@ -524,4 +524,31 @@ token_t *continue_statement(GPtrArray *input, gsize *position_p) {
     }
 
     return continue_statement_token;
+}
+
+gboolean break_statement_is_first(GPtrArray *input, gsize position) {
+    return token_is_first_keyword(input, position, KEYWORD_BREAK);
+}
+
+token_t *break_statement(GPtrArray *input, gsize *position_p) {
+
+    match_keyword_or_return_error(input, position_p, KEYWORD_BREAK,
+                                  ERROR_STATEMENT_BREAK_STATEMENT_BREAK)
+
+    token_t *break_statement_token = token_new_no_data(
+            TOKEN_STATEMENT_BREAK_STATEMENT);
+
+    if (!token_match_punctuator(input, position_p, PUNCTUATOR_SEMICOLON)) {
+
+        match_token_id_clone_and_add_child_or_free_parent_and_return_error(
+                input, position_p, TOKEN_LEXICAL_IDENTIFIER,
+                break_statement_token,
+                ERROR_STATEMENT_BREAK_STATEMENT_IDENTIFIER)
+
+        match_punctuator_or_free_and_return_error(input, position_p,
+                PUNCTUATOR_SEMICOLON, break_statement_token,
+                ERROR_STATEMENT_BREAK_STATEMENT_SEMICOLON)
+    }
+
+    return break_statement_token;
 }

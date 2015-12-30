@@ -48,4 +48,8 @@ gboolean continue_statement_is_first(GPtrArray *input, gsize position);
 
 token_t *continue_statement(GPtrArray *input, gsize *position_p);
 
+gboolean break_statement_is_first(GPtrArray *input, gsize position);
+
+token_t *break_statement(GPtrArray *input, gsize *position_p);
+
 #endif //KISCRIPT_STATEMENT_PARSER_H
