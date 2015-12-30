@@ -11,7 +11,10 @@
 
 /*
  * AST:
- * TODO
+ * Statement = (Block|VariableStatement|IfStatement|DoWhileStatement
+ *         |WhileStatement|ForStatement|ForEachStatement|ContinueStatement
+ *         |BreakStatement|ReturnStatement|LabelledStatement|SwitchStatement
+ *         |ThrowStatement|TryStatement|DebuggerStatement|ExpressionStatement)
  *
  * GRAMMAR:
  * NONSTANDARD: No EmptyStatement or WithStatement
@@ -30,9 +33,10 @@
  *     ThrowStatement
  *     TryStatement
  *     DebuggerStatement
- *     // Moved down for ambiguity
+ *     // Moved down for ambiguity.
  *     // TODO: Is such moving down necessary, can we have a reliable
- *     // expression_is_first()?
+ *     // expression_is_first()? If so, remember to also modify the order in AST
+ *     // and code arrangement.
  *     ExpressionStatement
  * STANDARD:
  * Statement :
@@ -73,7 +77,8 @@ token_t *statement(GPtrArray *input, gsize *position_p) {
     tokenize_and_return_if_is_first(input, position_p, debugger_statement)
     tokenize_and_return_if_is_first(input, position_p, expression_statement)
 
-    return NULL;
+    return error_new_syntactic(ERROR_STATEMENT_STATEMENT_STATEMENT,
+                               *position_p);
 }
 
 /*
