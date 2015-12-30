@@ -47,4 +47,10 @@ token_t *property_name_and_value_list(GPtrArray *input, gsize *position_t);
 
 gboolean property_assignment_is_first(GPtrArray *input, gsize position);
 
+token_t *property_assignment(GPtrArray *input, gsize *position_t);
+
+gboolean property_name_is_first(GPtrArray *input, gsize position);
+
+token_t *property_name(GPtrArray *input, gsize *position_t);
+
 #endif //KISCRIPT_EXPRESSION_PARSER_H
