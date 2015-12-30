@@ -76,4 +76,8 @@ gboolean throw_statement_is_first(GPtrArray *input, gsize position);
 
 token_t *throw_statement(GPtrArray *input, gsize *position_p);
 
+gboolean try_statement_is_first(GPtrArray *input, gsize position);
+
+token_t *try_statement(GPtrArray *input, gsize *position_p);
+
 #endif //KISCRIPT_STATEMENT_PARSER_H

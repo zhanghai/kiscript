@@ -85,7 +85,13 @@ gboolean token_has_child(token_t *token, gsize position) {
 }
 
 token_t *token_get_child(token_t *token, gsize position) {
+    g_assert(token_has_child(token, position));
     return g_ptr_array_index(token->children, position);
+}
+
+token_t *token_get_last_child(token_t *token) {
+    g_assert(token->children->len > 0);
+    return token_get_child(token, token->children->len - 1);
 }
 
 

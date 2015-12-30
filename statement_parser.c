@@ -67,6 +67,7 @@ token_t *statement(GPtrArray *input, gsize *position_p) {
     tokenize_and_return_if_is_first(input, position_p, labeled_statement)
     tokenize_and_return_if_is_first(input, position_p, switch_statement)
     tokenize_and_return_if_is_first(input, position_p, throw_statement)
+    tokenize_and_return_if_is_first(input, position_p, try_statement)
     // TODO
 
     // TODO: Error!
@@ -434,7 +435,8 @@ token_t *for_statement(GPtrArray *input, gsize *position_p) {
                 position_p, expression, for_statement_token)
 
         if (token_is_first_punctuator(input, *position_p, PUNCTUATOR_COLON)) {
-            token_t *expression_token = token_get_child(for_statement_token, 0);
+            token_t *expression_token = token_get_last_child(
+                    for_statement_token);
             if (!left_hand_side_expression_is_left_hand_side_expression(
                     expression_token)) {
                 token_free(&for_statement_token);
@@ -826,4 +828,70 @@ token_t *throw_statement(GPtrArray *input, gsize *position_p) {
     }
 
     return throw_statement_token;
+}
+
+/*
+ * AST:
+ * TryStatement - Block (Identifier|null) (Block|null) (Block|null)
+ *
+ * GRAMMAR:
+ * TryStatement :
+ *     try Block (Catch|Finally|(Catch Finally))
+ * Catch :
+ *     catch ( Identifier ) Block
+ * Finally :
+ *     finally Block
+ */
+
+gboolean try_statement_is_first(GPtrArray *input, gsize position) {
+    return token_is_first_keyword(input, position, KEYWORD_TRY);
+}
+
+token_t *try_statement(GPtrArray *input, gsize *position_p) {
+
+    match_keyword_or_return_error(input, position_p, KEYWORD_TRY,
+                                  ERROR_STATEMENT_TRY_STATEMENT_TRY)
+
+    token_t *try_statement_token = token_new_no_data(
+            TOKEN_STATEMENT_TRY_STATEMENT);
+
+    tokenize_and_add_child_or_free_parent_and_return_error(input, position_p,
+            block, try_statement_token)
+
+    gboolean catch_or_finally_matched = FALSE;
+
+    if (token_match_keyword(input, position_p, KEYWORD_CATCH)) {
+        match_punctuator_or_free_and_return_error(input, position_p,
+                PUNCTUATOR_PARENTHESIS_LEFT, try_statement_token,
+                ERROR_STATEMENT_TRY_STATEMENT_CATCH_PARENTHESIS_LEFT)
+        match_token_id_clone_and_add_child_or_free_parent_and_return_error(
+                input, position_p, TOKEN_LEXICAL_IDENTIFIER,
+                try_statement_token,
+                ERROR_STATEMENT_TRY_STATEMENT_CATCH_IDENTIFIER)
+        match_punctuator_or_free_and_return_error(input, position_p,
+                PUNCTUATOR_PARENTHESIS_RIGHT, try_statement_token,
+                ERROR_STATEMENT_TRY_STATEMENT_CATCH_PARENTHESIS_RIGHT)
+        tokenize_and_add_child_or_free_parent_and_return_error(input,
+                position_p, block, try_statement_token)
+        catch_or_finally_matched = TRUE;
+    } else {
+        token_add_child(try_statement_token, NULL);
+        token_add_child(try_statement_token, NULL);
+    }
+
+    if (token_match_keyword(input, position_p, KEYWORD_FINALLY)) {
+        tokenize_and_add_child_or_free_parent_and_return_error(input,
+                position_p, block, try_statement_token)
+        catch_or_finally_matched = TRUE;
+    } else {
+        token_add_child(try_statement_token, NULL);
+    }
+
+    if (!catch_or_finally_matched) {
+        token_free(&try_statement_token);
+        return error_new_syntactic(
+                ERROR_STATEMENT_TRY_STATEMENT_CATCH_OR_FINALLY, *position_p);
+    }
+
+    return try_statement_token;
 }
