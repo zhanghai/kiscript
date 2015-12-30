@@ -71,9 +71,8 @@ token_t *block(GPtrArray *input, gsize *position_p) {
     while (!token_match_punctuator(input, position_p,
                                    PUNCTUATOR_CURLY_BRACE_RIGHT)) {
 
-        tokenize_and_add_child_or_free_parent_and_return_error(input, position_p,
-                                                               statement,
-                                                               block_token)
+        tokenize_and_add_child_or_free_parent_and_return_error(input,
+                position_p, statement, block_token)
     }
 
     return block_token;
