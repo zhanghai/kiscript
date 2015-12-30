@@ -61,6 +61,8 @@ token_t *statement(GPtrArray *input, gsize *position_p) {
     tokenize_and_return_if_is_first(input, position_p, if_statement)
     tokenize_and_return_if_is_first(input, position_p, do_while_statement)
     tokenize_and_return_if_is_first(input, position_p, while_statement)
+    tokenize_and_return_if_is_first(input, position_p, for_statement)
+    tokenize_and_return_if_is_first(input, position_p, continue_statement)
     // TODO
 
     // TODO: Error!
@@ -495,4 +497,31 @@ token_t *for_statement(GPtrArray *input, gsize *position_p) {
     }
 
     return for_statement_token;
+}
+
+gboolean continue_statement_is_first(GPtrArray *input, gsize position) {
+    return token_is_first_keyword(input, position, KEYWORD_CONTINUE);
+}
+
+token_t *continue_statement(GPtrArray *input, gsize *position_p) {
+
+    match_keyword_or_return_error(input, position_p, KEYWORD_CONTINUE,
+                                  ERROR_STATEMENT_CONTINUE_STATEMENT_CONTINUE)
+
+    token_t *continue_statement_token = token_new_no_data(
+            TOKEN_STATEMENT_CONTINUE_STATEMENT);
+
+    if (!token_match_punctuator(input, position_p, PUNCTUATOR_SEMICOLON)) {
+
+        match_token_id_clone_and_add_child_or_free_parent_and_return_error(
+                input, position_p, TOKEN_LEXICAL_IDENTIFIER,
+                continue_statement_token,
+                ERROR_STATEMENT_CONTINUE_STATEMENT_IDENTIFIER)
+
+        match_punctuator_or_free_and_return_error(input, position_p,
+                PUNCTUATOR_SEMICOLON, continue_statement_token,
+                ERROR_STATEMENT_CONTINUE_STATEMENT_SEMICOLON)
+    }
+
+    return continue_statement_token;
 }

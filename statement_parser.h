@@ -44,4 +44,8 @@ gboolean for_statement_is_first(GPtrArray *input, gsize position);
 
 token_t *for_statement(GPtrArray *input, gsize *position_p);
 
+gboolean continue_statement_is_first(GPtrArray *input, gsize position);
+
+token_t *continue_statement(GPtrArray *input, gsize *position_p);
+
 #endif //KISCRIPT_STATEMENT_PARSER_H
