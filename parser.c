@@ -5,23 +5,23 @@
 
 #include "parser.h"
 
-static token_t *token_init(token_t *token, token_id_t id, gpointer data,
-                           clone_func_t data_clone_func,
-                           free_func_t data_free_func, GPtrArray *children) {
+static void token_init(token_t *token, token_id_t id, gpointer data,
+                       clone_func_t data_clone_func,
+                       free_func_t data_free_func, GPtrArray *children) {
     token->id = id;
     token->data = data;
     token->data_clone_func = data_clone_func;
     token->data_free_func = data_free_func;
     token->children = children;
-    return token;
 }
 
 static token_t *token_new_with_children(token_id_t id, gpointer data,
                                         clone_func_t data_clone_func,
                                         free_func_t data_free_func,
                                         GPtrArray *children) {
-    return token_init(g_new_1(token_t), id, data, data_clone_func,
-                      data_free_func, children);
+    token_t *token = g_new_1(token_t);
+    token_init(token, id, data, data_clone_func, data_free_func, children);
+    return token;
 }
 
 token_t *token_new(token_id_t id, gpointer data, clone_func_t data_clone_func,
@@ -82,7 +82,9 @@ void token_add_child(token_t *token, token_t *child) {
 
 
 static void token_free_func(gpointer token) {
-    token_free(token);
+    if (token) {
+        token_free(token);
+    }
 }
 
 GPtrArray *token_list_new() {
@@ -106,32 +108,30 @@ static void token_list_final(GPtrArray *token_list) {
 DEFINE_FREE_FUNCS_WITH_TYPE(token_list, GPtrArray)
 
 
-static error_info_t *error_info_init_lexical(error_info_t *error_info,
-                                             error_id_t id, gchar *position) {
+static void error_info_init_lexical(error_info_t *error_info, error_id_t id,
+                                    gchar *position) {
     error_info->id = id;
     error_info->is_lexical = TRUE;
     error_info->position.lexical = position;
-    return error_info;
 }
 
-static error_info_t *error_info_init_syntactic(error_info_t *error_info,
-                                               error_id_t id, gsize position) {
+static void error_info_init_syntactic(error_info_t *error_info, error_id_t id,
+                                      gsize position) {
     error_info->id = id;
     error_info->is_lexical = FALSE;
     error_info->position.syntactic = position;
-    return error_info;
-}
-
-static error_info_t *error_info_alloc() {
-    return g_new_1(error_info_t);
 }
 
 error_info_t *error_info_new_lexical(error_id_t id, gchar *position) {
-    return error_info_init_lexical(error_info_alloc(), id, position);
+    error_info_t *error_info = g_new_1(error_info_t);
+    error_info_init_lexical(error_info, id, position);
+    return error_info;
 }
 
 error_info_t *error_info_new_syntactic(error_id_t id, gsize position) {
-    return error_info_init_syntactic(error_info_alloc(), id, position);
+    error_info_t *error_info = g_new_1(error_info_t);
+    error_info_init_syntactic(error_info, id, position);
+    return error_info;
 }
 
 static void error_info_final(error_info_t *error_info) {
