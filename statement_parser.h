@@ -60,4 +60,16 @@ gboolean labeled_statement_is_first(GPtrArray *input, gsize position);
 
 token_t *labeled_statement(GPtrArray *input, gsize *position_p);
 
+gboolean switch_statement_is_first(GPtrArray *input, gsize position);
+
+token_t *switch_statement(GPtrArray *input, gsize *position_p);
+
+gboolean case_clause_is_first(GPtrArray *input, gsize position);
+
+token_t *case_clause(GPtrArray *input, gsize *position_p);
+
+gboolean default_clause_is_first(GPtrArray *input, gsize position);
+
+token_t *default_clause(GPtrArray *input, gsize *position_p);
+
 #endif //KISCRIPT_STATEMENT_PARSER_H

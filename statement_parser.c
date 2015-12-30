@@ -652,3 +652,135 @@ token_t *labeled_statement(GPtrArray *input, gsize *position_p) {
 
     return labeled_statement_token;
 }
+
+/*
+ * AST:
+ * SwitchStatement - Expression CaseClause* DefaultClause CaseClause*
+ *
+ * GRAMMAR:
+ * SwitchStatement :
+ *     switch ( Expression ) { CaseClause* DefaultClause CaseClause* }
+ */
+
+gboolean switch_statement_is_first(GPtrArray *input, gsize position) {
+    return token_is_first_keyword(input, position, KEYWORD_SWITCH);
+}
+
+token_t *switch_statement(GPtrArray *input, gsize *position_p) {
+
+    match_keyword_or_return_error(input, position_p, KEYWORD_SWITCH,
+                                  ERROR_STATEMENT_SWITCH_STATEMENT_SWITCH)
+
+    match_punctuator_or_return_error(input, position_p,
+            PUNCTUATOR_PARENTHESIS_LEFT,
+            ERROR_STATEMENT_SWITCH_STATEMENT_PARENTHESIS_LEFT)
+
+    token_t *switch_statement_token = token_new_no_data(
+            TOKEN_STATEMENT_SWITCH_STATEMENT);
+
+    tokenize_and_add_child_or_free_parent_and_return_error(input, position_p,
+            expression, switch_statement_token)
+
+    match_punctuator_or_free_and_return_error(input, position_p,
+            PUNCTUATOR_PARENTHESIS_RIGHT, switch_statement_token,
+            ERROR_STATEMENT_SWITCH_STATEMENT_PARENTHESIS_RIGHT)
+
+    match_punctuator_or_return_error(input, position_p,
+            PUNCTUATOR_CURLY_BRACE_LEFT,
+            ERROR_STATEMENT_SWITCH_STATEMENT_CURLY_BRACE_LEFT)
+
+    while (TRUE) {
+
+        if (case_clause_is_first(input, *position_p)) {
+            tokenize_and_add_child_or_free_parent_and_return_error(input,
+                    position_p, case_clause, switch_statement_token)
+
+        } else if (default_clause_is_first(input, *position_p)) {
+            tokenize_and_add_child_or_free_parent_and_return_error(input,
+                    position_p, default_clause, switch_statement_token)
+
+        } else {
+
+            match_punctuator_or_return_error(input, position_p,
+                    PUNCTUATOR_CURLY_BRACE_RIGHT,
+                    ERROR_STATEMENT_SWITCH_STATEMENT_CURLY_BRACE_RIGHT)
+            break;
+        }
+    }
+
+    return switch_statement_token;
+}
+
+/*
+ * AST:
+ * CaseClause - Identifier Statement
+ *
+ * GRAMMAR:
+ * CaseClause :
+ *     case Expression : Statement* [lookahead ∉ case, default, } ]
+ */
+
+gboolean case_clause_is_first(GPtrArray *input, gsize position) {
+    return token_is_first_keyword(input, position, KEYWORD_CASE);
+}
+
+token_t *case_clause(GPtrArray *input, gsize *position_p) {
+
+    match_keyword_or_return_error(input, position_p, KEYWORD_CASE,
+                                  ERROR_STATEMENT_CASE_CLAUSE_CASE)
+
+    token_t *case_clause_token = token_new_no_data(TOKEN_STATEMENT_CASE_CLAUSE);
+
+    tokenize_and_add_child_or_free_parent_and_return_error(input, position_p,
+                                                           expression,
+                                                           case_clause_token)
+
+    match_punctuator_or_free_and_return_error(input, position_p,
+            PUNCTUATOR_COLON, case_clause_token,
+            ERROR_STATEMENT_CASE_CLAUSE_COLON)
+
+    while (!case_clause_is_first(input, *position_p)
+           && !default_clause_is_first(input, *position_p)
+           && !token_is_first_punctuator(input, *position_p,
+                                         PUNCTUATOR_CURLY_BRACE_RIGHT)) {
+        tokenize_and_add_child_or_free_parent_and_return_error(input,
+                position_p, statement, case_clause_token)
+    }
+
+    return case_clause_token;
+}
+
+/*
+ * AST:
+ * DefaultClause - Statement*
+ *
+ * GRAMMAR:
+ * DefaultClause :
+ *     default : Statement* [lookahead ∉ case, default, } ]
+ */
+
+gboolean default_clause_is_first(GPtrArray *input, gsize position) {
+    return token_is_first_keyword(input, position, KEYWORD_DEFAULT);
+}
+
+token_t *default_clause(GPtrArray *input, gsize *position_p) {
+
+    match_keyword_or_return_error(input, position_p, KEYWORD_DEFAULT,
+                                  ERROR_STATEMENT_DEFAULT_CLAUSE_CASE)
+
+    match_punctuator_or_return_error(input, position_p, PUNCTUATOR_COLON,
+                                     ERROR_STATEMENT_DEFAULT_CLAUSE_COLON)
+
+    token_t *default_clause_token = token_new_no_data(
+            TOKEN_STATEMENT_DEFAULT_CLAUSE);
+
+    while (!case_clause_is_first(input, *position_p)
+           && !default_clause_is_first(input, *position_p)
+           && !token_is_first_punctuator(input, *position_p,
+                                         PUNCTUATOR_CURLY_BRACE_RIGHT)) {
+        tokenize_and_add_child_or_free_parent_and_return_error(input,
+                position_p, statement, default_clause_token)
+    }
+
+    return default_clause_token;
+}
