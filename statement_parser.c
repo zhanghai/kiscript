@@ -57,6 +57,8 @@
  *     DebuggerStatement
  */
 
+// TODO: statement_is_first()?
+
 token_t *statement(GPtrArray *input, gsize *position_p) {
 
     tokenize_and_return_if_is_first(input, position_p, block)
@@ -75,6 +77,7 @@ token_t *statement(GPtrArray *input, gsize *position_p) {
     tokenize_and_return_if_is_first(input, position_p, throw_statement)
     tokenize_and_return_if_is_first(input, position_p, try_statement)
     tokenize_and_return_if_is_first(input, position_p, debugger_statement)
+    // TODO: Is expression_is_first() reliable?
     tokenize_and_return_if_is_first(input, position_p, expression_statement)
 
     return error_new_syntactic(ERROR_STATEMENT_STATEMENT_STATEMENT,

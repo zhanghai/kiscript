@@ -6,6 +6,7 @@
 #include "function_parser.h"
 
 #include "lexical_parser.h"
+#include "statement_parser.h"
 #include "syntactic_parser_utils.h"
 
 /*
@@ -136,4 +137,25 @@ token_t *function_body(GPtrArray *input, gsize *position_p) {
             ERROR_FUNCTION_FUNCTION_BODY_CURLY_BRACE_RIGHT)
 
     return function_body_token;
+}
+
+/*
+ * AST:
+ * SourceElement = Statement|FunctionDeclaration
+ *
+ * GRAMMAR:
+ * SourceElement :
+ *     // TODO: statement_is_first()?
+ *     // NOTE: FunctionDeclaration is promoted over Statement for
+ *     // disambiguation.
+ *     FunctionDeclaration
+ *     Statement
+ */
+
+token_t *source_element(GPtrArray *input, gsize *position_p) {
+
+    tokenize_and_return_if_is_first(input, position_p, function_declaration)
+
+    // TODO: statement_is_first()?
+    return statement(input, position_p);
 }
