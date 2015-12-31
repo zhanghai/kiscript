@@ -3,8 +3,8 @@
 // All Rights Reserved.
 //
 
-#ifndef KISCRIPT_FUNCTION_PROGRAM_PARSER_H
-#define KISCRIPT_FUNCTION_PROGRAM_PARSER_H
+#ifndef KISCRIPT_FUNCTION_PARSER_H
+#define KISCRIPT_FUNCTION_PARSER_H
 
 #include "parser.h"
 
@@ -22,4 +22,4 @@ token_t *function_body(GPtrArray *input, gsize *position_p);
 
 token_t *source_element(GPtrArray *input, gsize *position_p);
 
-#endif //KISCRIPT_FUNCTION_PROGRAM_PARSER_H
+#endif //KISCRIPT_FUNCTION_PARSER_H
