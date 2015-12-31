@@ -725,7 +725,7 @@ token_t *switch_statement(GPtrArray *input, gsize *position_p) {
 
 /*
  * AST:
- * CaseClause - Identifier Statement
+ * CaseClause - Identifier Statement*
  *
  * GRAMMAR:
  * CaseClause :
@@ -950,7 +950,7 @@ token_t *expression_statement(GPtrArray *input, gsize *position_p) {
                                   PUNCTUATOR_CURLY_BRACE_LEFT)
         || token_is_first_keyword(input, *position_p, KEYWORD_FUNCTION)) {
         return error_new_syntactic(
-              ERROR_STATEMENT_EXPRESSION_STATEMENT_CURLY_BRACE_LFET_OR_FUNCTION,
+              ERROR_STATEMENT_EXPRESSION_STATEMENT_CURLY_BRACE_LEFT_OR_FUNCTION,
                 *position_p);
     }
 
