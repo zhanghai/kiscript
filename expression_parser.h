@@ -26,31 +26,4 @@ gboolean expression_is_first(GPtrArray *input, gsize position);
 
 token_t *expression(GPtrArray *input, gsize *position_t);
 
-//============================================
-token_t *assignment_expression(GPtrArray *input, gsize *position_t);
-
-token_t *conditional_expression(GPtrArray *input, gsize *position_t);
-
-gboolean conditional_expression_is_first(GPtrArray *input, gsize position);
-
-token_t *element_list(GPtrArray *input, gsize *position_t);
-
-gboolean element_list_is_first(GPtrArray *input, gsize position);
-
-gboolean assignment_expression_is_first(GPtrArray *input, gsize position);
-
-gboolean left_hand_side_expression_is_first(GPtrArray *input, gsize position);
-
-token_t *left_hand_side_expression(GPtrArray *input, gsize *position_t);
-
-token_t *property_name_and_value_list(GPtrArray *input, gsize *position_t);
-
-gboolean property_assignment_is_first(GPtrArray *input, gsize position);
-
-token_t *property_assignment(GPtrArray *input, gsize *position_t);
-
-gboolean property_name_is_first(GPtrArray *input, gsize position);
-
-token_t *property_name(GPtrArray *input, gsize *position_t);
-
 #endif //KISCRIPT_EXPRESSION_PARSER_H
