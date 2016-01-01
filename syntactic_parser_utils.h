@@ -72,6 +72,16 @@ gboolean token_match_punctuator(GPtrArray *input, gsize *position_p,
         token_add_child(parent_token, child_token_or_error); \
     }
 
+#define match_token_id_clone_and_return_if_is_first(input, position_p, \
+        token_id) \
+    { \
+        token_t *token_clone; \
+        if (!token_match_id_clone((input), (position_p), (token_id), \
+                &token_clone)) { \
+            return token_clone; \
+        } \
+    }
+
 #define match_token_id_clone_and_add_child_or_free_parent_and_return_error( \
         input, position_p, token_id, parent_token, error_id) \
     { \
