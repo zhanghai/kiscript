@@ -54,12 +54,53 @@ token_t *primary_expression(GPtrArray *input, gsize *position_p) {
                                *position_p);
 }
 
+/*
+ * AST:
+ * ArrayLiteral - AssignmentExpression*
+ *
+ * GRAMMAR:
+ * NONSTANDARD: Disallow multiple or trailing comma. Anyway JSON disallows this.
+ * ArrayLiteral :
+ *     [ AssignmentExpression (, AssignmentExpression)* ]
+ * STANDARD:
+ * ArrayLiteral :
+ *     [ ElementList? ,* ]
+ * ElementList :
+ *     ,* AssignmentExpression (,+ AssignmentExpression)*
+ */
+
 gboolean array_literal_is_first(GPtrArray *input, gsize position) {
-    // TODO
-    return FALSE;
+    return token_is_first_punctuator(input, position,
+                                     PUNCTUATOR_SQUARE_BRACKET_LEFT);
 }
 
-token_t *array_literal(GPtrArray *input, gsize *position_t);
+token_t *array_literal(GPtrArray *input, gsize *position_t) {
+
+    match_punctuator_or_return_error(input, position_t,
+            PUNCTUATOR_SQUARE_BRACKET_LEFT,
+            ERROR_EXPRESSION_ARRAY_EXPRESSION_SQUARE_BRACKET_LEFT)
+
+    token_t *array_literal_token = token_new_no_data(
+            TOKEN_EXPRESSION_ARRAY_LITERAL);
+
+    gboolean first = TRUE;
+    while (!token_match_punctuator(input, position_t,
+                                   PUNCTUATOR_SQUARE_BRACKET_RIGHT)) {
+
+        if (first) {
+            first = FALSE;
+        } else {
+            match_punctuator_or_free_and_return_error(input, position_t,
+                    PUNCTUATOR_COMMA, array_literal_token,
+                    ERROR_EXPRESSION_ARRAY_EXPRESSION_COMMA)
+        }
+
+        tokenize_and_add_child_or_free_parent_and_return_error(input,
+                position_t, assignment_expression, array_literal_token)
+    }
+
+    return array_literal_token;
+}
 
 gboolean object_literal_is_first(GPtrArray *input, gsize position) {
     // TODO
