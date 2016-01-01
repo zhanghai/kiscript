@@ -36,6 +36,10 @@ gboolean property_name_is_first(GPtrArray *input, gsize position);
 
 token_t *property_name(GPtrArray *input, gsize *position_p);
 
+gboolean callable_expression_is_first(GPtrArray *input, gsize position);
+
+token_t *callable_expression(GPtrArray *input, gsize *position_p);
+
 gboolean argument_list_is_first(GPtrArray *input, gsize position);
 
 token_t *argument_list(GPtrArray *input, gsize *position_p);
@@ -44,7 +48,7 @@ gboolean new_expression_is_first(GPtrArray *input, gsize position);
 
 token_t *new_expression(GPtrArray *input, gsize *position_p);
 
-gboolean left_hand_side_expression_is_left_hand_side_expression(token_t *token);
+token_t *left_hand_side_expression(GPtrArray *input, gsize *position_p);
 
 token_t *assignment_expression(GPtrArray *input, gsize *position_p);
 

@@ -375,7 +375,7 @@ token_t *while_statement(GPtrArray *input, gsize *position_p) {
  *     VariableDeclaration (, VariableDeclaration)*
  * STANDARD:
  * ForStatement :
- *     for ( ExpressionNoIn? ; Expressionopt ; Expression? ) Statement
+ *     for ( ExpressionNoIn? ; Expression? ; Expression? ) Statement
  *     for ( var VariableDeclarationListNoIn ; Expression? ; Expression? )
  *             Statement
  *     for ( LeftHandSideExpression in Expression ) Statement
@@ -445,15 +445,10 @@ token_t *for_statement(GPtrArray *input, gsize *position_p) {
                 position_p, expression, for_statement_token)
 
         if (token_is_first_punctuator(input, *position_p, PUNCTUATOR_COLON)) {
-            token_t *expression_token = token_get_last_child(
-                    for_statement_token);
-            if (!left_hand_side_expression_is_left_hand_side_expression(
-                    expression_token)) {
-                token_free(&for_statement_token);
-                return error_new_syntactic(
-                   ERROR_STATEMENT_FOR_EACH_STATEMENT_LEFT_HAND_SIDE_EXPRESSION,
-                        *position_p);
-            }
+            // NOTE: LeftHandSideExpression not checked here because bythe rules
+            // in spec, LeftHandSideExpression = NewExpression
+            // = MemberExpression = PrimaryExpression = ( Expression ), which
+            // means our returned token will always be of type Expression.
             is_for_each = TRUE;
         }
     }

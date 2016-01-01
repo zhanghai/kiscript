@@ -160,8 +160,9 @@ token_t *object_literal(GPtrArray *input, gsize *position_p) {
 }
 
 /*
- * AST: PropertyAssignment = PropertyAssignmentPlain|PropertyAssignmentGet
- *         |PropertyAssignmentSet
+ * AST:
+ * PropertyAssignment = PropertyAssignmentPlain|PropertyAssignmentGet
+ *     |PropertyAssignmentSet
  *
  * GRAMMAR:
  * PropertyAssignment :
@@ -182,7 +183,8 @@ token_t *property_assignment(GPtrArray *input, gsize *position_p) {
 }
 
 /*
- * AST: PropertyAssignmentPlain = PropertyName AssignmentExpression
+ * AST:
+ * PropertyAssignmentPlain = PropertyName AssignmentExpression
  *
  * GRAMMAR:
  * PropertyAssignmentPlain :
@@ -212,7 +214,8 @@ token_t *property_assignment_plain(GPtrArray *input, gsize *position_p) {
 }
 
 /*
- * AST: PropertyAssignmentGet = PropertyName FunctionBody
+ * AST:
+ * PropertyAssignmentGet = PropertyName FunctionBody
  *
  * GRAMMAR:
  * PropertyAssignmentGet :
@@ -257,7 +260,8 @@ token_t *property_assignment_get(GPtrArray *input, gsize *position_p) {
 }
 
 /*
- * AST: PropertyAssignmentSet = PropertyName Identifier FunctionBody
+ * AST:
+ * PropertyAssignmentSet = PropertyName Identifier FunctionBody
  *
  * GRAMMAR:
  * PropertyAssignmentSet :
@@ -389,6 +393,10 @@ static token_t *non_left_recursive_callable_expression(GPtrArray *input,
             *position_p);
 }
 
+gboolean callable_expression_is_first(GPtrArray *input, gsize position) {
+    return non_left_recursive_callable_expression_is_first(input, position);
+}
+
 token_t *callable_expression(GPtrArray *input, gsize *position_p) {
 
     token_t *callable_expression_token =
@@ -496,6 +504,7 @@ token_t *argument_list(GPtrArray *input, gsize *position_p) {
  * NewExpression - CallableExpression ArgumentList
  *
  * GRAMMAR:
+ * // NONSTANDARD: Disallow NewExpression without ArgumentList.
  * NewExpression :
  *     new CallableExpression ArgumentList
  *
@@ -524,20 +533,19 @@ token_t *new_expression(GPtrArray *input, gsize *position_p) {
 }
 
 /*
+ * NOTE: LeftHandSideExpression here is only a syntactic symbol, and the real
+ * check is performed at execution time.
+ *
  * AST:
- * TODO
+ * LeftHandSideExpression = CallableExpression
  *
  * GRAMMAR:
- * TODO
  * LeftHandSideExpression :
- *     NewExpression
- *     CallExpression
+ *     CallableExpression
  */
 
-gboolean left_hand_side_expression_is_left_hand_side_expression(
-        token_t *token) {
-    // TODO
-    return FALSE;
+token_t *left_hand_side_expression(GPtrArray *input, gsize *position_p) {
+    return callable_expression(input, position_p);
 }
 
 token_t *assignment_expression(GPtrArray *input, gsize *position_p);
