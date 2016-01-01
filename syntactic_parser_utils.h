@@ -65,7 +65,7 @@ gboolean token_match_punctuator(GPtrArray *input, gsize *position_p,
     }
 
 #define tokenize_and_add_child_or_free_grand_parent_and_return_error(input, \
-        position_p, tokenize_func, grand_parent_token, parent_token) \
+        position_p, tokenize_func, parent_token, grand_parent_token) \
     { \
         token_t *child_token_or_error = tokenize_func((input), (position_p)); \
         return_and_free_if_error(child_token_or_error, grand_parent_token) \

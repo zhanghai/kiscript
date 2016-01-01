@@ -12,29 +12,37 @@ token_t *primary_expression(GPtrArray *input, gsize *position_p);
 
 gboolean array_literal_is_first(GPtrArray *input, gsize position);
 
-token_t *array_literal(GPtrArray *input, gsize *position_t);
+token_t *array_literal(GPtrArray *input, gsize *position_p);
 
 gboolean object_literal_is_first(GPtrArray *input, gsize position);
 
-token_t *object_literal(GPtrArray *input, gsize *position_t);
+token_t *object_literal(GPtrArray *input, gsize *position_p);
 
-token_t *property_assignment(GPtrArray *input, gsize *position_t);
+token_t *property_assignment(GPtrArray *input, gsize *position_p);
 
 gboolean property_assignment_plain_is_first(GPtrArray *input, gsize position);
 
-token_t *property_assignment_plain(GPtrArray *input, gsize *position_t);
+token_t *property_assignment_plain(GPtrArray *input, gsize *position_p);
 
 gboolean property_assignment_get_is_first(GPtrArray *input, gsize position);
 
-token_t *property_assignment_get(GPtrArray *input, gsize *position_t);
+token_t *property_assignment_get(GPtrArray *input, gsize *position_p);
 
 gboolean property_assignment_set_is_first(GPtrArray *input, gsize position);
 
-token_t *property_assignment_set(GPtrArray *input, gsize *position_t);
+token_t *property_assignment_set(GPtrArray *input, gsize *position_p);
 
 gboolean property_name_is_first(GPtrArray *input, gsize position);
 
-token_t *property_name(GPtrArray *input, gsize *position_t);
+token_t *property_name(GPtrArray *input, gsize *position_p);
+
+gboolean argument_list_is_first(GPtrArray *input, gsize position);
+
+token_t *argument_list(GPtrArray *input, gsize *position_p);
+
+gboolean new_expression_is_first(GPtrArray *input, gsize position);
+
+token_t *new_expression(GPtrArray *input, gsize *position_p);
 
 gboolean left_hand_side_expression_is_left_hand_side_expression(token_t *token);
 
@@ -42,6 +50,6 @@ token_t *assignment_expression(GPtrArray *input, gsize *position_p);
 
 gboolean expression_is_first(GPtrArray *input, gsize position);
 
-token_t *expression(GPtrArray *input, gsize *position_t);
+token_t *expression(GPtrArray *input, gsize *position_p);
 
 #endif //KISCRIPT_EXPRESSION_PARSER_H

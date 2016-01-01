@@ -417,7 +417,7 @@ token_t *for_statement(GPtrArray *input, gsize *position_p) {
                                           PUNCTUATOR_COMMA)) {
                 tokenize_and_add_child_or_free_grand_parent_and_return_error(
                         input, position_p, variable_declaration,
-                        for_statement_token, variable_declaration_list_token)
+                        variable_declaration_list_token, for_statement_token)
             }
 
         } else {

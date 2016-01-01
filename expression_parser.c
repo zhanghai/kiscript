@@ -5,6 +5,7 @@
 
 #include "expression_parser.h"
 
+#include "function_parser.h"
 #include "lexical_parser.h"
 #include "syntactic_parser_utils.h"
 
@@ -22,6 +23,20 @@
  *     ObjectLiteral
  *     ( Expression )
  */
+
+gboolean primary_expression_is_first(GPtrArray *input, gsize position) {
+    return token_is_first_keyword(input, position, KEYWORD_THIS)
+           || token_is_first_id(input, position, TOKEN_LEXICAL_IDENTIFIER)
+           || token_is_first_id(input, position, TOKEN_LEXICAL_NULL_LITERAL)
+           || token_is_first_id(input, position, TOKEN_LEXICAL_BOOLEAN_LITERAL)
+           || token_is_first_id(input, position, TOKEN_LEXICAL_NUMERIC_LITERAL)
+           || token_is_first_id(input, position, TOKEN_LEXICAL_STRING_LITERAL)
+           || array_literal_is_first(input, position)
+           || object_literal_is_first(input, position)
+           || token_is_first_punctuator(input, position,
+                                        PUNCTUATOR_PARENTHESIS_LEFT);
+}
+
 token_t *primary_expression(GPtrArray *input, gsize *position_p) {
 
     token_t *token = token_get_or_null(input, *position_p);
@@ -74,9 +89,9 @@ gboolean array_literal_is_first(GPtrArray *input, gsize position) {
                                      PUNCTUATOR_SQUARE_BRACKET_LEFT);
 }
 
-token_t *array_literal(GPtrArray *input, gsize *position_t) {
+token_t *array_literal(GPtrArray *input, gsize *position_p) {
 
-    match_punctuator_or_return_error(input, position_t,
+    match_punctuator_or_return_error(input, position_p,
             PUNCTUATOR_SQUARE_BRACKET_LEFT,
             ERROR_EXPRESSION_ARRAY_LITERAL_SQUARE_BRACKET_LEFT)
 
@@ -84,19 +99,19 @@ token_t *array_literal(GPtrArray *input, gsize *position_t) {
             TOKEN_EXPRESSION_ARRAY_LITERAL);
 
     gboolean first = TRUE;
-    while (!token_match_punctuator(input, position_t,
+    while (!token_match_punctuator(input, position_p,
                                    PUNCTUATOR_SQUARE_BRACKET_RIGHT)) {
 
         if (first) {
             first = FALSE;
         } else {
-            match_punctuator_or_free_and_return_error(input, position_t,
+            match_punctuator_or_free_and_return_error(input, position_p,
                     PUNCTUATOR_COMMA, array_literal_token,
                    ERROR_EXPRESSION_ARRAY_LITERAL_COMMA_OR_SQUARE_BRACKET_RIGHT)
         }
 
         tokenize_and_add_child_or_free_parent_and_return_error(input,
-                position_t, assignment_expression, array_literal_token)
+                position_p, assignment_expression, array_literal_token)
     }
 
     return array_literal_token;
@@ -116,9 +131,9 @@ gboolean object_literal_is_first(GPtrArray *input, gsize position) {
                                      PUNCTUATOR_CURLY_BRACE_LEFT);
 }
 
-token_t *object_literal(GPtrArray *input, gsize *position_t) {
+token_t *object_literal(GPtrArray *input, gsize *position_p) {
 
-    match_punctuator_or_return_error(input, position_t,
+    match_punctuator_or_return_error(input, position_p,
             PUNCTUATOR_CURLY_BRACE_LEFT,
             ERROR_EXPRESSION_OBJECT_LITERAL_CURLY_BRACE_LEFT)
 
@@ -126,44 +141,44 @@ token_t *object_literal(GPtrArray *input, gsize *position_t) {
             TOKEN_EXPRESSION_OBJECT_LITERAL);
 
     gboolean first = TRUE;
-    while (!token_match_punctuator(input, position_t,
+    while (!token_match_punctuator(input, position_p,
                                    PUNCTUATOR_CURLY_BRACE_RIGHT)) {
 
         if (first) {
             first = FALSE;
         } else {
-            match_punctuator_or_free_and_return_error(input, position_t,
+            match_punctuator_or_free_and_return_error(input, position_p,
                     PUNCTUATOR_COMMA, object_literal_token,
                     ERROR_EXPRESSION_OBJECT_LITERAL_COMMA_OR_CURLY_BRACE_RIGHT)
         }
 
         tokenize_and_add_child_or_free_parent_and_return_error(input,
-                    position_t, property_assignment, object_literal_token)
+                    position_p, property_assignment, object_literal_token)
     }
 
     return object_literal_token;
 }
 
 /*
- * AST: PropertyAssignment = (PropertyAssignmentPlain|PropertyAssignmentGet
- *         |PropertyAssignmentSet)
+ * AST: PropertyAssignment = PropertyAssignmentPlain|PropertyAssignmentGet
+ *         |PropertyAssignmentSet
  *
  * GRAMMAR:
  * PropertyAssignment :
  *     (PropertyAssignmentPlain|PropertyAssignmentGet|PropertyAssignmentSet)
  */
 
-token_t *property_assignment(GPtrArray *input, gsize *position_t) {
+token_t *property_assignment(GPtrArray *input, gsize *position_p) {
 
-    tokenize_and_return_if_is_first(input, position_t,
+    tokenize_and_return_if_is_first(input, position_p,
                                     property_assignment_plain)
-    tokenize_and_return_if_is_first(input, position_t,
+    tokenize_and_return_if_is_first(input, position_p,
                                     property_assignment_get)
-    tokenize_and_return_if_is_first(input, position_t,
+    tokenize_and_return_if_is_first(input, position_p,
                                     property_assignment_set)
 
     return error_new_syntactic(ERROR_EXPRESSION_PROPERTY_ASSIGNMENT,
-                               *position_t);
+                               *position_p);
 }
 
 /*
@@ -178,19 +193,19 @@ gboolean property_assignment_plain_is_first(GPtrArray *input, gsize position) {
     return property_name_is_first(input, position);
 }
 
-token_t *property_assignment_plain(GPtrArray *input, gsize *position_t) {
+token_t *property_assignment_plain(GPtrArray *input, gsize *position_p) {
 
     token_t *property_assignment_plain_token = token_new_no_data(
-            TOKEN_EXPRESSION_PROPERY_ASSIGNMENT_PLAIN);
+            TOKEN_EXPRESSION_PROPERTY_ASSIGNMENT_PLAIN);
 
-    tokenize_and_add_child_or_free_parent_and_return_error(input, position_t,
+    tokenize_and_add_child_or_free_parent_and_return_error(input, position_p,
             property_name, property_assignment_plain_token)
 
-    match_punctuator_or_free_and_return_error(input, position_t,
+    match_punctuator_or_free_and_return_error(input, position_p,
             PUNCTUATOR_COLON, property_assignment_plain_token,
             ERROR_EXPRESSION_PROPERTY_ASSIGNMENT_PLAIN_COLON)
 
-    tokenize_and_add_child_or_free_parent_and_return_error(input, position_t,
+    tokenize_and_add_child_or_free_parent_and_return_error(input, position_p,
             property_name, property_assignment_plain_token)
 
     return property_assignment_plain_token;
@@ -208,33 +223,33 @@ gboolean property_assignment_get_is_first(GPtrArray *input, gsize position) {
     return token_is_first_keyword(input, position, KEYWORD_GET);
 }
 
-token_t *property_assignment_get(GPtrArray *input, gsize *position_t) {
+token_t *property_assignment_get(GPtrArray *input, gsize *position_p) {
 
-    match_keyword_or_return_error(input, position_t, KEYWORD_GET,
+    match_keyword_or_return_error(input, position_p, KEYWORD_GET,
                                   ERROR_EXPRESSION_PROPERTY_ASSIGNMENT_GET_GET);
 
     token_t *property_assignment_get_token = token_new_no_data(
-            TOKEN_EXPRESSION_PROPERY_ASSIGNMENT_GET);
+            TOKEN_EXPRESSION_PROPERTY_ASSIGNMENT_GET);
 
-    tokenize_and_add_child_or_free_parent_and_return_error(input, position_t,
+    tokenize_and_add_child_or_free_parent_and_return_error(input, position_p,
             property_name, property_assignment_get_token)
 
-    match_punctuator_or_free_and_return_error(input, position_t,
+    match_punctuator_or_free_and_return_error(input, position_p,
             PUNCTUATOR_PARENTHESIS_LEFT, property_assignment_get_token,
             ERROR_EXPRESSION_PROPERTY_ASSIGNMENT_GET_PARENTHESIS_LEFT)
 
-    match_punctuator_or_free_and_return_error(input, position_t,
+    match_punctuator_or_free_and_return_error(input, position_p,
             PUNCTUATOR_PARENTHESIS_RIGHT, property_assignment_get_token,
             ERROR_EXPRESSION_PROPERTY_ASSIGNMENT_GET_PARENTHESIS_RIGHT)
 
-    match_punctuator_or_free_and_return_error(input, position_t,
+    match_punctuator_or_free_and_return_error(input, position_p,
             PUNCTUATOR_CURLY_BRACE_LEFT, property_assignment_get_token,
             ERROR_EXPRESSION_PROPERTY_ASSIGNMENT_GET_CURLY_BRACE_LEFT)
 
-    tokenize_and_add_child_or_free_parent_and_return_error(input, position_t,
+    tokenize_and_add_child_or_free_parent_and_return_error(input, position_p,
             property_name, property_assignment_get_token)
 
-    match_punctuator_or_free_and_return_error(input, position_t,
+    match_punctuator_or_free_and_return_error(input, position_p,
             PUNCTUATOR_CURLY_BRACE_RIGHT, property_assignment_get_token,
             ERROR_EXPRESSION_PROPERTY_ASSIGNMENT_GET_CURLY_BRACE_RIGHT)
 
@@ -253,37 +268,37 @@ gboolean property_assignment_set_is_first(GPtrArray *input, gsize position) {
     return token_is_first_keyword(input, position, KEYWORD_SET);
 }
 
-token_t *property_assignment_set(GPtrArray *input, gsize *position_t) {
+token_t *property_assignment_set(GPtrArray *input, gsize *position_p) {
 
-    match_keyword_or_return_error(input, position_t, KEYWORD_SET,
+    match_keyword_or_return_error(input, position_p, KEYWORD_SET,
                                   ERROR_EXPRESSION_PROPERTY_ASSIGNMENT_SET_SET);
 
     token_t *property_assignment_get_token = token_new_no_data(
-            TOKEN_EXPRESSION_PROPERY_ASSIGNMENT_SET);
+            TOKEN_EXPRESSION_PROPERTY_ASSIGNMENT_SET);
 
-    tokenize_and_add_child_or_free_parent_and_return_error(input, position_t,
+    tokenize_and_add_child_or_free_parent_and_return_error(input, position_p,
             property_name, property_assignment_get_token)
 
-    match_punctuator_or_free_and_return_error(input, position_t,
+    match_punctuator_or_free_and_return_error(input, position_p,
             PUNCTUATOR_PARENTHESIS_LEFT, property_assignment_get_token,
             ERROR_EXPRESSION_PROPERTY_ASSIGNMENT_SET_PARENTHESIS_LEFT)
 
-    match_punctuator_or_free_and_return_error(input, position_t,
+    match_punctuator_or_free_and_return_error(input, position_p,
             PUNCTUATOR_PARENTHESIS_RIGHT, property_assignment_get_token,
             ERROR_EXPRESSION_PROPERTY_ASSIGNMENT_SET_PARENTHESIS_RIGHT)
 
     match_token_id_clone_and_add_child_or_free_parent_and_return_error(input,
-            position_t, TOKEN_LEXICAL_IDENTIFIER, property_assignment_get_token,
+            position_p, TOKEN_LEXICAL_IDENTIFIER, property_assignment_get_token,
             ERROR_EXPRESSION_PROPERTY_ASSIGNMENT_SET_IDENTIFIER)
 
-    match_punctuator_or_free_and_return_error(input, position_t,
+    match_punctuator_or_free_and_return_error(input, position_p,
             PUNCTUATOR_CURLY_BRACE_LEFT, property_assignment_get_token,
             ERROR_EXPRESSION_PROPERTY_ASSIGNMENT_SET_CURLY_BRACE_LEFT)
 
-    tokenize_and_add_child_or_free_parent_and_return_error(input, position_t,
+    tokenize_and_add_child_or_free_parent_and_return_error(input, position_p,
             property_name, property_assignment_get_token)
 
-    match_punctuator_or_free_and_return_error(input, position_t,
+    match_punctuator_or_free_and_return_error(input, position_p,
             PUNCTUATOR_CURLY_BRACE_RIGHT, property_assignment_get_token,
             ERROR_EXPRESSION_PROPERTY_ASSIGNMENT_SET_CURLY_BRACE_RIGHT)
 
@@ -292,7 +307,7 @@ token_t *property_assignment_set(GPtrArray *input, gsize *position_t) {
 
 /*
  * AST:
- * PropertyName = (Identifier|StringLiteral|NumericLiteral|AssignmentExpression)
+ * PropertyName = Identifier|StringLiteral|NumericLiteral|AssignmentExpression
  *
  * GRAMMAR:
  * PropertyName :
@@ -310,27 +325,214 @@ gboolean property_name_is_first(GPtrArray *input, gsize position) {
                                         PUNCTUATOR_SQUARE_BRACKET_LEFT);
 }
 
-token_t *property_name(GPtrArray *input, gsize *position_t) {
+token_t *property_name(GPtrArray *input, gsize *position_p) {
 
-    match_token_id_clone_and_return_if_is_first(input, position_t,
+    match_token_id_clone_and_return_if_is_first(input, position_p,
                                                 TOKEN_LEXICAL_IDENTIFIER)
-    match_token_id_clone_and_return_if_is_first(input, position_t,
+    match_token_id_clone_and_return_if_is_first(input, position_p,
                                                 TOKEN_LEXICAL_STRING_LITERAL)
-    match_token_id_clone_and_return_if_is_first(input, position_t,
+    match_token_id_clone_and_return_if_is_first(input, position_p,
                                                 TOKEN_LEXICAL_NUMERIC_LITERAL);
 
-    if (token_match_punctuator(input, position_t,
+    if (token_match_punctuator(input, position_p,
                                PUNCTUATOR_SQUARE_BRACKET_LEFT)) {
         token_t *assignment_expression_token = assignment_expression(input,
-                position_t);
-        match_punctuator_or_free_and_return_error(input, position_t,
+                position_p);
+        match_punctuator_or_free_and_return_error(input, position_p,
                 PUNCTUATOR_SQUARE_BRACKET_RIGHT, assignment_expression_token,
                 ERROR_EXPRESSION_PROPERTY_NAME_SQUARE_BRACKET_RIGHT)
         return assignment_expression_token;
     }
 
-    return error_new_syntactic(ERROR_EXPRESSION_PROPERTY_NAME, *position_t);
+    return error_new_syntactic(ERROR_EXPRESSION_PROPERTY_NAME, *position_p);
 }
+
+/*
+ * AST:
+ * CallableExpression = PrimaryExpression|FunctionExpression|NewExpression
+ *     |PropertyAccessor|CallExpression
+ * PropertyAccessor - CallableExpression (Identifier|Expression)
+ * CallExpression - CallableExpression ArgumentList
+ *
+ * GRAMMAR:
+ * NonLeftRecursiveCallableExpression :
+ *     PrimaryExpression
+ *     FunctionExpression
+ *     NewExpression
+ * CallableExpression :
+ *     NonLeftRecursiveCallableExpression
+ *     PropertyAccessor
+ *     CallExpression
+ * PropertyAccessor :
+ *     CallableExpression . Identifier
+ *     CallableExpression [ Expression ]
+ * CallExpression :
+ *     CallableExpression ArgumentList
+ */
+
+static gboolean non_left_recursive_callable_expression_is_first(
+        GPtrArray *input, gsize position) {
+    return primary_expression_is_first(input, position)
+           || function_expression_is_first(input, position)
+           || new_expression_is_first(input, position);
+}
+
+static token_t *non_left_recursive_callable_expression(GPtrArray *input,
+                                                       gsize *position_p) {
+
+    tokenize_and_return_if_is_first(input, position_p, primary_expression)
+    tokenize_and_return_if_is_first(input, position_p, function_expression)
+    tokenize_and_return_if_is_first(input, position_p, new_expression)
+
+    return error_new_syntactic(
+            ERROR_EXPRESSION_CALLABLE_EXPRESSION_CALLABLE_EXPRESSION,
+            *position_p);
+}
+
+token_t *callable_expression(GPtrArray *input, gsize *position_p) {
+
+    token_t *callable_expression_token =
+            non_left_recursive_callable_expression(input, position_p);
+    return_if_error(callable_expression_token);
+
+    // LOOKAHEAD in the middle for left-recursion: Power of recursive-descent!
+    while (TRUE) {
+
+        if (token_match_punctuator(input, position_p, PUNCTUATOR_DOT)) {
+
+            token_t *property_accessor_token = token_new_no_data(
+                    TOKEN_EXPRESSION_PROPERTY_ACCESSOR);
+
+            token_add_child(property_accessor_token, callable_expression_token);
+
+            match_token_id_clone_and_add_child_or_free_parent_and_return_error(
+                    input, position_p, TOKEN_LEXICAL_IDENTIFIER,
+                    property_accessor_token,
+                    ERROR_EXPRESSION_PROPERTY_ACCESSOR_IDENTIFIER)
+
+            callable_expression_token = property_accessor_token;
+
+        } else if (token_match_punctuator(input, position_p,
+                                   PUNCTUATOR_SQUARE_BRACKET_LEFT)) {
+
+            token_t *property_accessor_token = token_new_no_data(
+                    TOKEN_EXPRESSION_PROPERTY_ACCESSOR);
+
+            token_add_child(property_accessor_token, callable_expression_token);
+
+            tokenize_and_add_child_or_free_parent_and_return_error(input,
+                    position_p, expression, property_accessor_token);
+
+            match_punctuator_or_free_and_return_error(input, position_p,
+                    PUNCTUATOR_SQUARE_BRACKET_RIGHT, property_accessor_token,
+                    ERROR_EXPRESSION_PROPERTY_ACCESSOR_SQUARE_BRACKET_RIGHT)
+
+            callable_expression_token = property_accessor_token;
+
+        } else if (argument_list_is_first(input, *position_p)) {
+
+            token_t *call_expression_token = token_new_no_data(
+                    TOKEN_EXPRESSION_CALL_EXPRESSION);
+
+            token_add_child(call_expression_token, callable_expression_token);
+
+            tokenize_and_add_child_or_free_parent_and_return_error(input,
+                    position_p, argument_list, call_expression_token)
+
+            callable_expression_token = call_expression_token;
+
+        } else {
+            break;
+        }
+    }
+
+    return callable_expression_token;
+}
+
+/*
+ * AST:
+ * ArgumentList - AssignmentExpression*
+ *
+ * GRAMMAR:
+ * ArgumentList :
+ *     ( (AssignmentExpression (, AssignmentExpression)*)? )
+ */
+
+gboolean argument_list_is_first(GPtrArray *input, gsize position) {
+    return token_is_first_punctuator(input, position,
+                                     PUNCTUATOR_PARENTHESIS_LEFT);
+}
+
+token_t *argument_list(GPtrArray *input, gsize *position_p) {
+
+    match_punctuator_or_return_error(input, position_p,
+            PUNCTUATOR_PARENTHESIS_LEFT,
+            ERROR_EXPRESSION_ARGUMENT_LIST_PARENTHESIS_LEFT)
+
+    token_t *argument_list_token = token_new_no_data(
+            TOKEN_EXPRESSION_ARGUMENT_LIST);
+
+    gboolean first = TRUE;
+    while (!token_match_punctuator(input, position_p,
+                                   PUNCTUATOR_PARENTHESIS_RIGHT)) {
+
+        if (first) {
+            first = FALSE;
+        } else {
+            match_punctuator_or_free_and_return_error(input, position_p,
+                    PUNCTUATOR_COMMA, argument_list_token,
+                    ERROR_EXPRESSION_ARGUMENT_LIST_COMMA_OR_PARENTHESIS_RIGHT)
+        }
+
+        tokenize_and_add_child_or_free_parent_and_return_error(input,
+                position_p, assignment_expression, argument_list_token)
+    }
+
+    return argument_list_token;
+}
+
+/**
+ * AST:
+ * NewExpression - CallableExpression ArgumentList
+ *
+ * GRAMMAR:
+ * NewExpression :
+ *     new CallableExpression ArgumentList
+ *
+ */
+gboolean new_expression_is_first(GPtrArray *input, gsize position) {
+    return token_is_first_keyword(input, position, KEYWORD_NEW);
+}
+
+token_t *new_expression(GPtrArray *input, gsize *position_p) {
+
+    match_keyword_or_return_error(input, position_p, KEYWORD_NEW,
+                                  ERROR_EXPRESSION_NEW_EXPRESSION_NEW)
+
+    token_t *new_expression_token = token_new_no_data(
+            TOKEN_EXPRESSION_NEW_EXPRESSION);
+
+    tokenize_and_add_child_or_free_parent_and_return_error(input, position_p,
+                                                           callable_expression,
+                                                           new_expression_token)
+
+    tokenize_and_add_child_or_free_parent_and_return_error(input, position_p,
+                                                           argument_list,
+                                                           new_expression_token)
+
+    return new_expression_token;
+}
+
+/*
+ * AST:
+ * TODO
+ *
+ * GRAMMAR:
+ * TODO
+ * LeftHandSideExpression :
+ *     NewExpression
+ *     CallExpression
+ */
 
 gboolean left_hand_side_expression_is_left_hand_side_expression(
         token_t *token) {
@@ -345,5 +547,5 @@ gboolean expression_is_first(GPtrArray *input, gsize position) {
     return FALSE;
 }
 
-token_t *expression(GPtrArray *input, gsize *position_t);
+token_t *expression(GPtrArray *input, gsize *position_p);
 
