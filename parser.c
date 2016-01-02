@@ -160,7 +160,7 @@ DEFINE_FREE_FUNCS(error_info)
 
 
 static void error_info_free_func(gpointer error_info) {
-    error_info_free(error_info);
+    error_info_free_no_nullify(error_info);
 }
 
 static token_t *error_new(error_info_t *info) {
