@@ -966,8 +966,8 @@ token_t *bitwise_or_expression(GPtrArray *input, gsize *position_p) {
 
 token_t *logical_and_expression(GPtrArray *input, gsize *position_p) {
 
-    token_t *bitwise_or_or_logical_and_expression_token =
-            bitwise_or_expression(input, position_p);
+    token_t *bitwise_or_or_logical_and_expression_token = bitwise_or_expression(
+            input, position_p);
     return_if_error(bitwise_or_or_logical_and_expression_token);
 
     // LEFT_RECURSION
@@ -984,6 +984,39 @@ token_t *logical_and_expression(GPtrArray *input, gsize *position_p) {
     }
 
     return bitwise_or_or_logical_and_expression_token;
+}
+
+/*
+ * AST:
+ * LogicalORExpression = LogicalANDExpression
+ * LogicalORExpression - LogicalORExpression LogicalANDExpression
+ *
+ * GRAMMAR:
+ * LogicalORExpression :
+ *     LogicalANDExpression
+ *     LogicalORExpression || LogicalANDExpression
+ */
+
+token_t *logical_or_expression(GPtrArray *input, gsize *position_p) {
+
+    token_t *logical_and_or_logical_or_expression_token =
+            logical_and_expression(input, position_p);
+    return_if_error(logical_and_or_logical_or_expression_token);
+
+    // LEFT_RECURSION
+    while (token_match_punctuator(input, position_p, PUNCTUATOR_LOGICAL_OR)) {
+
+        token_t *logical_or_expression_token = token_new_no_data(
+                TOKEN_EXPRESSION_LOGICAL_OR_EXPRESSION);
+        token_add_child(logical_or_expression_token,
+                        logical_and_or_logical_or_expression_token);
+        tokenize_and_add_child_or_free_parent_and_return_error(input,
+                position_p, logical_and_expression, logical_or_expression_token)
+        logical_and_or_logical_or_expression_token =
+                logical_or_expression_token;
+    }
+
+    return logical_and_or_logical_or_expression_token;
 }
 
 token_t *assignment_expression(GPtrArray *input, gsize *position_p);
