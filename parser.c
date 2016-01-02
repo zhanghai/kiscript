@@ -96,7 +96,7 @@ token_t *token_get_last_child(token_t *token) {
 
 static void token_free_func(gpointer token) {
     if (token) {
-        token_free(token);
+        token_free_no_nullify(token);
     }
 }
 
