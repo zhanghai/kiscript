@@ -72,6 +72,8 @@ token_t *logical_and_expression(GPtrArray *input, gsize *position_p);
 
 token_t *logical_or_expression(GPtrArray *input, gsize *position_p);
 
+token_t *conditional_expression(GPtrArray *input, gsize *position_p);
+
 token_t *assignment_expression(GPtrArray *input, gsize *position_p);
 
 gboolean expression_is_first(GPtrArray *input, gsize position);

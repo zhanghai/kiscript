@@ -947,6 +947,44 @@ DEFINE_SIMPLE_EXPRESSION_TOKEN(logical_or_expression, logical_and_expression,
                                PUNCTUATOR_LOGICAL_OR,
                                TOKEN_EXPRESSION_LOGICAL_OR_EXPRESSION)
 
+/*
+ * AST:
+ * ConditionalExpression = LogicalORExpression
+ * ConditionalExpression - LogicalORExpression AssignmentExpression
+ *         AssignmentExpression
+ *
+ * GRAMMAR:
+ * ConditionalExpression :
+ *     LogicalORExpression
+ *     LogicalORExpression ? AssignmentExpression : AssignmentExpression
+ */
+
+token_t *conditional_expression(GPtrArray *input, gsize *position_p) {
+
+    token_t *logical_or_expression_token = logical_or_expression(input,
+                                                                 position_p);
+    return_if_error(logical_or_expression_token);
+
+    if (token_match_punctuator(input, position_p, PUNCTUATOR_QUESTION_MARK)) {
+
+        token_t *conditional_expression_token = token_new_no_data(
+                TOKEN_EXPRESSION_CONDITIONAL_EXPRESSION);
+        token_add_child(conditional_expression_token,
+                        logical_or_expression_token);
+        tokenize_and_add_child_or_free_parent_and_return_error(input,
+                position_p, assignment_expression, conditional_expression_token)
+        match_punctuator_or_free_and_return_error(input, position_p,
+                PUNCTUATOR_COLON, conditional_expression_token,
+                ERROR_EXPRESSION_CONDITIONAL_EXPRESSION_COLON)
+        tokenize_and_add_child_or_free_parent_and_return_error(input,
+                position_p, assignment_expression, conditional_expression_token)
+        return conditional_expression_token;
+
+    } else {
+        return logical_or_expression_token;
+    }
+}
+
 token_t *assignment_expression(GPtrArray *input, gsize *position_p) {
     // TODO
     return NULL;
