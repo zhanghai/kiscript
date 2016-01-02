@@ -953,6 +953,39 @@ token_t *bitwise_or_expression(GPtrArray *input, gsize *position_p) {
     return bitwise_xor_or_bitwise_or_expression_token;
 }
 
+/*
+ * AST:
+ * LogicalANDExpression = BitwiseORExpression
+ * LogicalANDExpression - LogicalANDExpression BitwiseORExpression
+ *
+ * GRAMMAR:
+ * LogicalANDExpression :
+ *     BitwiseORExpression
+ *     LogicalANDExpression && BitwiseORExpression
+ */
+
+token_t *logical_and_expression(GPtrArray *input, gsize *position_p) {
+
+    token_t *bitwise_or_or_logical_and_expression_token =
+            bitwise_or_expression(input, position_p);
+    return_if_error(bitwise_or_or_logical_and_expression_token);
+
+    // LEFT_RECURSION
+    while (token_match_punctuator(input, position_p, PUNCTUATOR_LOGICAL_AND)) {
+
+        token_t *logical_and_expression_token = token_new_no_data(
+                TOKEN_EXPRESSION_LOGICAL_AND_EXPRESSION);
+        token_add_child(logical_and_expression_token,
+                        bitwise_or_or_logical_and_expression_token);
+        tokenize_and_add_child_or_free_parent_and_return_error(input,
+                position_p, bitwise_or_expression, logical_and_expression_token)
+        bitwise_or_or_logical_and_expression_token =
+                logical_and_expression_token;
+    }
+
+    return bitwise_or_or_logical_and_expression_token;
+}
+
 token_t *assignment_expression(GPtrArray *input, gsize *position_p);
 
 gboolean expression_is_first(GPtrArray *input, gsize position) {
