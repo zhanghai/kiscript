@@ -71,7 +71,6 @@ static void token_final(token_t *token) {
         token->data = NULL;
     }
     token_list_free(&token->children);
-    token->children = NULL;
 }
 
 DEFINE_FREE_FUNCS(token)
@@ -115,11 +114,14 @@ GPtrArray *token_list_clone(GPtrArray *token_list) {
     return token_list_clone;
 }
 
-static void token_list_final(GPtrArray *token_list) {
+void token_list_free_no_nullify(GPtrArray *token_list) {
     g_ptr_array_free(token_list, TRUE);
 }
 
-DEFINE_FREE_FUNCS_WITH_TYPE(token_list, GPtrArray)
+void token_list_free(GPtrArray **token_list_p) {
+    token_list_free_no_nullify(*token_list_p);
+    *token_list_p = NULL;
+}
 
 
 static void error_info_init_lexical(error_info_t *error_info, error_id_t id,
