@@ -31,11 +31,13 @@ int main() {
     token_t *error = NULL;
     GPtrArray *token_list = lexical_parse(input, &error);
     if (error) {
+        token_free(&error);
         return EXIT_FAILURE;
     }
 
     token_t *program_or_error = syntactic_parse(token_list);
     if (error_is_error(program_or_error)) {
+        token_free((&program_or_error));
         return EXIT_FAILURE;
     }
 
