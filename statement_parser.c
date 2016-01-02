@@ -445,10 +445,10 @@ token_t *for_statement(GPtrArray *input, gsize *position_p) {
                 position_p, expression, for_statement_token)
 
         if (token_is_first_punctuator(input, *position_p, PUNCTUATOR_COLON)) {
-            // NOTE: LeftHandSideExpression not checked here because bythe rules
-            // in spec, LeftHandSideExpression = NewExpression
+            // NOTE: LeftHandSideExpression not checked here because by the
+            // rules in spec, LeftHandSideExpression = NewExpression
             // = MemberExpression = PrimaryExpression = ( Expression ), which
-            // means our returned token will always be of type Expression.
+            // means it can always be of type Expression.
             is_for_each = TRUE;
         }
     }

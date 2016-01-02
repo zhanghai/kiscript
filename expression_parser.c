@@ -985,9 +985,79 @@ token_t *conditional_expression(GPtrArray *input, gsize *position_p) {
     }
 }
 
+/*
+ * AST:
+ * AssignmentExpression = ConditionalExpression
+ * AssignmentExpression - LeftHandSideExpression
+ *         (=|*=|/=|%=|+=|-=|<<=|>>=|>>>=|&=|^=||=) AssignmentExpression
+ *
+ * GRAMMAR:
+ * AssignmentExpression :
+ *     ConditionalExpression
+ *     LeftHandSideExpression (=|*=|/=|%=|+=|-=|<<=|>>=|>>>=|&=|^=||=)
+ *             AssignmentExpression
+ */
+
 token_t *assignment_expression(GPtrArray *input, gsize *position_p) {
-    // TODO
-    return NULL;
+
+    token_t *conditional_expression_token = conditional_expression(input,
+                                                                   position_p);
+    return_if_error(conditional_expression_token);
+
+    token_t *operator_token;
+    if (token_match_punctuator_clone(input, position_p, PUNCTUATOR_EQUALS_SIGN,
+                                     &operator_token)
+        || token_match_punctuator_clone(input, position_p,
+                                        PUNCTUATOR_MULTIPLY_ASSIGNMENT,
+                                        &operator_token)
+        || token_match_punctuator_clone(input, position_p,
+                                        PUNCTUATOR_DIVIDE_ASSIGNMENT,
+                                        &operator_token)
+        || token_match_punctuator_clone(input, position_p,
+                                        PUNCTUATOR_MODULO_ASSIGNMENT,
+                                        &operator_token)
+        || token_match_punctuator_clone(input, position_p,
+                                        PUNCTUATOR_ADD_ASSIGNMENT,
+                                        &operator_token)
+        || token_match_punctuator_clone(input, position_p,
+                                        PUNCTUATOR_SUBTRACT_ASSIGNMENT,
+                                        &operator_token)
+        || token_match_punctuator_clone(input, position_p,
+                                        PUNCTUATOR_LEFT_SHIFT_ASSIGNMENT,
+                                        &operator_token)
+        || token_match_punctuator_clone(input, position_p,
+                                       PUNCTUATOR_SIGNED_RIGHT_SHIFT_ASSIGNMENT,
+                                        &operator_token)
+        || token_match_punctuator_clone(input, position_p,
+                                     PUNCTUATOR_UNSIGNED_RIGHT_SHIFT_ASSIGNMENT,
+                                        &operator_token)
+        || token_match_punctuator_clone(input, position_p,
+                                        PUNCTUATOR_BITWISE_AND_ASSIGNMENT,
+                                        &operator_token)
+        || token_match_punctuator_clone(input, position_p,
+                                        PUNCTUATOR_BITWISE_XOR_ASSIGNMENT,
+                                        &operator_token)
+        || token_match_punctuator_clone(input, position_p,
+                                        PUNCTUATOR_BITWISE_OR_ASSIGNMENT,
+                                        &operator_token)) {
+
+        // NOTE: LeftHandSideExpression not checked here because by the rules in
+        // spec, LeftHandSideExpression = NewExpression = MemberExpression
+        // = PrimaryExpression = Expression = ... = ConditionalExpression, which
+        // means it can always be of type ConditionalExpression.
+
+        token_t *assignment_expression_token = token_new_no_data(
+                TOKEN_EXPRESSION_ASSIGNMENT_EXPRESSION);
+        token_add_child(assignment_expression_token,
+                        conditional_expression_token);
+        token_add_child(assignment_expression_token, operator_token);
+        tokenize_and_add_child_or_free_parent_and_return_error(input,
+                position_p, assignment_expression, assignment_expression_token)
+        return assignment_expression_token;
+
+    } else {
+        return conditional_expression_token;
+    }
 }
 
 gboolean expression_is_first(GPtrArray *input, gsize position) {
