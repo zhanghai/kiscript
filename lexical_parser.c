@@ -49,7 +49,6 @@ GPtrArray *lexical_parse(gchar **input_p, token_t **error_p) {
  *     NumericLiteral
  *     StringLiteral
  *     Punctuator
- *     DivPunctuator
  *     WhiteSpace
  *     LineTerminator
  *     SingleLineComment
@@ -69,7 +68,6 @@ token_t *lexical_token(gchar **input_p) {
     tokenize_and_return_if_is_first(input_p, numeric_literal)
     tokenize_and_return_if_is_first(input_p, string_literal)
     tokenize_and_return_if_is_first(input_p, punctuator)
-    tokenize_and_return_if_is_first(input_p, div_punctuator)
     tokenize_and_return_if_is_first(input_p, white_space)
     tokenize_and_return_if_is_first(input_p, line_terminator)
     tokenize_and_return_if_is_first(input_p, single_line_comment)
