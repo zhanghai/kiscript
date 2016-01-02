@@ -16,30 +16,36 @@ int main() {
     size_t input_length = 0;
     getline(&input, &input_length, stdin);
     if (errno) {
-        free(input);
+        g_free(input);
         return EXIT_FAILURE;
     } else {
         char *input_malloc = input;
         input = g_strdup(input);
         free(input_malloc);
+        input_malloc = NULL;
     }
 
     if (!lexical_parse_normalize_input(&input)) {
+        g_free(input);
         return EXIT_FAILURE;
     }
 
     token_t *error = NULL;
     GPtrArray *token_list = lexical_parse(input, &error);
+    g_free(input);
     if (error) {
         token_free(&error);
         return EXIT_FAILURE;
     }
 
     token_t *program_or_error = syntactic_parse(token_list);
+    token_list_free(&token_list);
     if (error_is_error(program_or_error)) {
-        token_free((&program_or_error));
+        token_free(&program_or_error);
         return EXIT_FAILURE;
     }
+
+    token_free(&program_or_error);
 
     printf("Hello, KiScript!\n");
     return EXIT_SUCCESS;

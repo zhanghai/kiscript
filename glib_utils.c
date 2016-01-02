@@ -12,3 +12,9 @@ GString *g_string_clone(GString *string) {
 gboolean g_ptr_array_in_range(GPtrArray *array, gsize position) {
     return position < array->len;
 }
+
+#undef g_free
+
+void g_free_no_nullify(gpointer pointer) {
+    g_free(pointer);
+}

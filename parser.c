@@ -65,10 +65,10 @@ static void token_final(token_t *token) {
     if (token->data) {
         if (token->data_free_func) {
             token->data_free_func(token->data);
+            token->data = NULL;
         } else {
             g_free(token->data);
         }
-        token->data = NULL;
     }
     token_list_free(&token->children);
 }

@@ -10,6 +10,14 @@
 
 #define g_new_1(type_name) g_new(type_name, 1)
 
+void g_free_no_nullify(gpointer pointer);
+
+#define g_free(pointer) \
+    G_STMT_START { \
+        g_free_no_nullify(pointer); \
+        pointer = NULL; \
+    } G_STMT_END
+
 GString *g_string_clone(GString *string);
 
 gboolean g_ptr_array_in_range(GPtrArray *array, gsize position);
