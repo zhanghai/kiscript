@@ -95,7 +95,7 @@ gboolean text_array_is_match(gchar *input, gchar **text_array,
         while (match_func(input_p)) {} \
     }
 
-#define DEFINE_MATCH_ANY_SAVE_FUNC(match_func_name, match_func) \
+#define DEFINE_MATCH_ANY_SAVE_FUNC(match_func, match_func_name) \
     void match_func_name(gchar **input_p, GString *buffer) { \
         while (match_func(input_p, buffer)) {} \
     }
@@ -110,7 +110,7 @@ gboolean text_array_is_match(gchar *input, gchar **text_array,
         } \
     }
 
-#define DEFINE_MATCH_MULTIPLE_SAVE_FUNC(match_func_name, match_func) \
+#define DEFINE_MATCH_MULTIPLE_SAVE_FUNC(match_func, match_func_name) \
     gboolean match_func_name(gchar **input_p, GString *buffer) { \
         if (match_func(input_p, buffer)) { \
             while (match_func(input_p, buffer)) {} \
