@@ -3,6 +3,7 @@
 // All Rights Reserved.
 //
 
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -11,7 +12,17 @@
 
 int main() {
 
-    char *input = g_strdup("0x1234567890abcdefABCDEF \tabc\vfor");
+    char *input = NULL;
+    size_t input_length = 0;
+    getline(&input, &input_length, stdin);
+    if (errno) {
+        free(input);
+        return EXIT_FAILURE;
+    } else {
+        char *input_malloc = input;
+        input = g_strdup(input);
+        free(input_malloc);
+    }
 
     if (!lexical_parse_normalize_input(&input)) {
         return EXIT_FAILURE;
