@@ -403,21 +403,18 @@ token_t *callable_expression(GPtrArray *input, gsize *position_p) {
             non_left_recursive_callable_expression(input, position_p);
     return_if_error(callable_expression_token);
 
-    // LOOKAHEAD in the middle for left-recursion: Power of recursive-descent!
+    // LEFT_RECURSION: lookahead with the power of recursive-descent parsing.
     while (TRUE) {
 
         if (token_match_punctuator(input, position_p, PUNCTUATOR_DOT)) {
 
             token_t *property_accessor_token = token_new_no_data(
                     TOKEN_EXPRESSION_PROPERTY_ACCESSOR);
-
             token_add_child(property_accessor_token, callable_expression_token);
-
             match_token_id_clone_and_add_child_or_free_parent_and_return_error(
                     input, position_p, TOKEN_LEXICAL_IDENTIFIER,
                     property_accessor_token,
                     ERROR_EXPRESSION_PROPERTY_ACCESSOR_IDENTIFIER)
-
             callable_expression_token = property_accessor_token;
 
         } else if (token_match_punctuator(input, position_p,
@@ -425,28 +422,21 @@ token_t *callable_expression(GPtrArray *input, gsize *position_p) {
 
             token_t *property_accessor_token = token_new_no_data(
                     TOKEN_EXPRESSION_PROPERTY_ACCESSOR);
-
             token_add_child(property_accessor_token, callable_expression_token);
-
             tokenize_and_add_child_or_free_parent_and_return_error(input,
                     position_p, expression, property_accessor_token);
-
             match_punctuator_or_free_and_return_error(input, position_p,
                     PUNCTUATOR_SQUARE_BRACKET_RIGHT, property_accessor_token,
                     ERROR_EXPRESSION_PROPERTY_ACCESSOR_SQUARE_BRACKET_RIGHT)
-
             callable_expression_token = property_accessor_token;
 
         } else if (argument_list_is_first(input, *position_p)) {
 
             token_t *call_expression_token = token_new_no_data(
                     TOKEN_EXPRESSION_CALL_EXPRESSION);
-
             token_add_child(call_expression_token, callable_expression_token);
-
             tokenize_and_add_child_or_free_parent_and_return_error(input,
                     position_p, argument_list, call_expression_token)
-
             callable_expression_token = call_expression_token;
 
         } else {
@@ -637,6 +627,52 @@ token_t *unary_expression(GPtrArray *input, gsize *position_p) {
     } else {
         return postfix_expression(input, position_p);
     }
+}
+
+/*
+ * MultiplicativeExpression :
+ *     UnaryExpression
+ *     MultiplicativeExpression * UnaryExpression
+ *     MultiplicativeExpression / UnaryExpression
+ *     MultiplicativeExpression % UnaryExpression
+ */
+
+token_t *multiplicative_expression(GPtrArray *input, gsize *position_p) {
+
+    token_t *unary_or_multiplicative_expression_token = unary_expression(input,
+            position_p);
+    return_if_error(unary_or_multiplicative_expression_token);
+
+    // LEFT_RECURSION: lookahead with the power of recursive-descent parsing.
+    while (TRUE) {
+
+        token_t *operator_token;
+        if (token_match_punctuator_clone(input, position_p, PUNCTUATOR_ASTERISK,
+                                         &operator_token)
+                || token_match_punctuator_clone(input, position_p,
+                                                PUNCTUATOR_SLASH,
+                                                &operator_token)
+                || token_match_punctuator_clone(input, position_p,
+                                                PUNCTUATOR_PERCENT,
+                                                &operator_token)) {
+
+            token_t *multiplicative_expression_token = token_new_no_data(
+                    TOKEN_EXPRESSION_MULTIPLICATIVE_EXPRESSION);
+            token_add_child(multiplicative_expression_token,
+                            unary_or_multiplicative_expression_token);
+            token_add_child(multiplicative_expression_token, operator_token);
+            tokenize_and_add_child_or_free_parent_and_return_error(input,
+                            position_p, unary_expression,
+                            multiplicative_expression_token)
+            unary_or_multiplicative_expression_token =
+                    multiplicative_expression_token;
+
+        } else {
+            break;
+        }
+    }
+
+    return unary_or_multiplicative_expression_token;
 }
 
 token_t *assignment_expression(GPtrArray *input, gsize *position_p);
