@@ -18,6 +18,18 @@ token_t *token_get_or_null(GPtrArray *input, gsize position) {
     }
 }
 
+gboolean token_consume_clone(GPtrArray *input, gsize *position_p,
+                             token_t **token_clone_p) {
+    token_t *token = token_get_or_null(input, *position_p);
+    if (token) {
+        *token_clone_p = token_clone(token);
+        token_consume(input, position_p);
+        return TRUE;
+    } else {
+        return FALSE;
+    }
+}
+
 gboolean token_consume(GPtrArray *input, gsize *position_p) {
     if (g_ptr_array_in_range(input, *position_p)) {
         ++(*position_p);
@@ -68,6 +80,13 @@ gboolean token_match_keyword(GPtrArray *input, gsize *position_p,
            && token_consume(input, position_p);
 }
 
+gboolean token_match_keyword_clone(GPtrArray *input, gsize *position_p,
+                                   keyword_id_t keyword_id,
+                                   token_t **token_clone_p) {
+    return token_is_first_keyword(input, *position_p, keyword_id)
+           && token_consume_clone(input, position_p, token_clone_p);
+}
+
 gboolean token_is_first_punctuator(GPtrArray *input, gsize position,
                                    punctuator_id_t punctuator_id) {
     token_t *token = token_get_or_null(input, position);
@@ -78,4 +97,11 @@ gboolean token_match_punctuator(GPtrArray *input, gsize *position_p,
                                 punctuator_id_t punctuator_id) {
     return token_is_first_punctuator(input, *position_p, punctuator_id)
            && token_consume(input, position_p);
+}
+
+gboolean token_match_punctuator_clone(GPtrArray *input, gsize *position_p,
+                                      punctuator_id_t punctuator_id,
+                                      token_t **token_clone_p) {
+    return token_is_first_punctuator(input, *position_p, punctuator_id)
+           && token_consume_clone(input, position_p, token_clone_p);
 }

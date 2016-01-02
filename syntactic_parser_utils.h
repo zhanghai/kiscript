@@ -12,6 +12,9 @@ token_t *token_get_or_null(GPtrArray *input, gsize position);
 
 gboolean token_consume(GPtrArray *input, gsize *position_p);
 
+gboolean token_consume_clone(GPtrArray *input, gsize *position_p,
+                             token_t **token_clone_p);
+
 gboolean token_is_first_id(GPtrArray *input, gsize position,
                            token_id_t token_id);
 
@@ -27,11 +30,19 @@ gboolean token_is_first_keyword(GPtrArray *input, gsize position,
 gboolean token_match_keyword(GPtrArray *input, gsize *position_p,
                              keyword_id_t keyword_id);
 
+gboolean token_match_keyword_clone(GPtrArray *input, gsize *position_p,
+                                   keyword_id_t keyword_id,
+                                   token_t **token_clone_p);
+
 gboolean token_is_first_punctuator(GPtrArray *input, gsize position,
                                    punctuator_id_t punctuator_id);
 
 gboolean token_match_punctuator(GPtrArray *input, gsize *position_p,
                                 punctuator_id_t punctuator_id);
+
+gboolean token_match_punctuator_clone(GPtrArray *input, gsize *position_p,
+                                      punctuator_id_t punctuator_id,
+                                      token_t **token_clone_p);
 
 #define return_if_error(token_or_error) \
     if (error_is_error((token_or_error))) {\
@@ -76,7 +87,7 @@ gboolean token_match_punctuator(GPtrArray *input, gsize *position_p,
         token_id) \
     { \
         token_t *token_clone; \
-        if (!token_match_id_clone((input), (position_p), (token_id), \
+        if (token_match_id_clone((input), (position_p), (token_id), \
                 &token_clone)) { \
             return token_clone; \
         } \

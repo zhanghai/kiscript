@@ -548,6 +548,97 @@ token_t *left_hand_side_expression(GPtrArray *input, gsize *position_p) {
     return callable_expression(input, position_p);
 }
 
+/*
+ * AST:
+ * PostfixExpression = LeftHandSideExpression
+ * PostfixExpression - LeftHandSideExpression (Punctuator(++)|Punctuator(--))
+ *
+ * GRAMMAR:
+ * NONSTANDARD: Allow LineTerminator.
+ * PostfixExpression :
+ *     LeftHandSideExpression
+ *     LeftHandSideExpression ++
+ *     LeftHandSideExpression --
+ */
+
+token_t *postfix_expression(GPtrArray *input, gsize *position_p) {
+
+    token_t *left_hand_side_expression_token = left_hand_side_expression(input,
+            position_p);
+    return_if_error(left_hand_side_expression_token);
+
+    token_t *operator_token;
+    if (token_match_punctuator_clone(input, position_p, PUNCTUATOR_INCREMENT,
+                                     &operator_token)
+        || token_match_punctuator_clone(input, position_p, PUNCTUATOR_DECREMENT,
+                                        &operator_token)) {
+
+        token_t *postfix_expression_token = token_new_no_data(
+                TOKEN_EXPRESSION_POSTFIX_EXPRESSION);
+        token_add_child(postfix_expression_token,
+                        left_hand_side_expression_token);
+        token_add_child(postfix_expression_token, operator_token);
+        return postfix_expression_token;
+
+    } else {
+        return left_hand_side_expression_token;
+    }
+}
+
+/*
+ * AST:
+ * UnaryExpression = PostfixExpression
+ * UnaryExpression - (delete|void|typeof|++|--|+|-|~|!) UnaryExpression
+ *
+ * GRAMMAR:
+ * UnaryExpression :
+ *     PostfixExpression
+ *     delete UnaryExpression
+ *     void UnaryExpression
+ *     typeof UnaryExpression
+ *     ++ UnaryExpression
+ *     -- UnaryExpression
+ *     + UnaryExpression
+ *     - UnaryExpression
+ *     ~ UnaryExpression
+ *     ! UnaryExpression
+ */
+
+token_t *unary_expression(GPtrArray *input, gsize *position_p) {
+
+    token_t *operator_token;
+    if (token_match_keyword_clone(input, position_p, KEYWORD_DELETE,
+                                  &operator_token)
+        || token_match_keyword_clone(input, position_p, KEYWORD_VOID,
+                                     &operator_token)
+        || token_match_keyword_clone(input, position_p, KEYWORD_TYPEOF,
+                                     &operator_token)
+        || token_match_punctuator_clone(input, position_p, PUNCTUATOR_INCREMENT,
+                                        &operator_token)
+        || token_match_punctuator_clone(input, position_p, PUNCTUATOR_DECREMENT,
+                                        &operator_token)
+        || token_match_punctuator_clone(input, position_p, PUNCTUATOR_PLUS,
+                                        &operator_token)
+        || token_match_punctuator_clone(input, position_p, PUNCTUATOR_MINUS,
+                                        &operator_token)
+        || token_match_punctuator_clone(input, position_p, PUNCTUATOR_TILDE,
+                                        &operator_token)
+        ||token_match_punctuator_clone(input, position_p,
+                                       PUNCTUATOR_EXCLAMATION, &operator_token)
+            ) {
+
+        token_t *unary_expression_token = token_new_no_data(
+                TOKEN_EXPRESSION_UNARY_EXPRESSION);
+        token_add_child(unary_expression_token, operator_token);
+        tokenize_and_add_child_or_free_parent_and_return_error(input,
+                position_p, unary_expression, unary_expression_token)
+        return unary_expression_token;
+
+    } else {
+        return postfix_expression(input, position_p);
+    }
+}
+
 token_t *assignment_expression(GPtrArray *input, gsize *position_p);
 
 gboolean expression_is_first(GPtrArray *input, gsize position) {
