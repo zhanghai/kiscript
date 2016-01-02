@@ -9,6 +9,7 @@ Based on ECMAScript 5.0, with reference to ECMAScript 6.0, and some customizatio
 ## Grammar Variation
 
 - UTF-8 instead of UTF-16.
+- No `/regex/` literal.
 - No `Keyword` as `IdentifierName`.
 - No `.1` or `1.`.
 - `\0` is always `NUL` in `StringLiteral`.

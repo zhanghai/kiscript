@@ -625,6 +625,8 @@ static char *PUNCTUATORS[] = {
         ")",
         "(",
         ".",
+        "/=",
+        "/",
         "?",
         "!==",
         "!=",
@@ -683,39 +685,6 @@ DEFINE_TOKEN_IS_TOKEN_FUNC(punctuator, TOKEN_LEXICAL_PUNCTUATOR)
 DEFINE_TOKEN_GET_ID_FUNC(punctuator)
 
 DEFINE_TOKEN_IS_TOKEN_WITH_ID_FUNC(punctuator)
-
-static char *DIV_PUNCTUATORS[] = {
-        "/=",
-        "/"
-};
-
-gboolean div_punctuator_is_first(gchar *input) {
-    return text_array_is_first(input, FUTURE_RESERVED_WORDS,
-                               G_N_ELEMENTS(FUTURE_RESERVED_WORDS));
-}
-
-static DEFINE_PRIMITIVE_NEW_FUNC(div_punctuator_id)
-
-static DEFINE_PRIMITIVE_FUNC_FUNC(div_punctuator_id)
-
-token_t *div_punctuator(gchar **input_p) {
-
-    gsize index;
-    if (text_array_match_save_index(input_p, DIV_PUNCTUATORS,
-                                    G_N_ELEMENTS(DIV_PUNCTUATORS), &index)) {
-        return token_new(TOKEN_LEXICAL_DIV_PUNCTUATOR,
-                         div_punctuator_id_new((div_punctuator_id_t) index),
-                         div_punctuator_id_clone_func, NULL);
-    }
-
-    return error_new_lexical(ERROR_LEXICAL_DIV_PUNCTUATOR, *input_p);
-}
-
-DEFINE_TOKEN_IS_TOKEN_FUNC(div_punctuator, TOKEN_LEXICAL_DIV_PUNCTUATOR)
-
-DEFINE_TOKEN_GET_ID_FUNC(div_punctuator)
-
-DEFINE_TOKEN_IS_TOKEN_WITH_ID_FUNC(div_punctuator)
 
 /*
  * NullLiteral ::
