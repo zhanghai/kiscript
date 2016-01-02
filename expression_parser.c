@@ -698,7 +698,7 @@ token_t *additive_expression(GPtrArray *input, gsize *position_p) {
                                            &operator_token)) {
 
         token_t *additive_expression_token = token_new_no_data(
-                TOKEN_EXPRESSION_ADDTIVE_EXPRESSION);
+                TOKEN_EXPRESSION_ADDITIVE_EXPRESSION);
         token_add_child(additive_expression_token,
                         multiplicative_or_additive_expression_token);
         token_add_child(additive_expression_token, operator_token);
@@ -709,6 +709,49 @@ token_t *additive_expression(GPtrArray *input, gsize *position_p) {
     }
 
     return multiplicative_or_additive_expression_token;
+}
+
+/*
+ * AST:
+ * ShiftExpression = AdditiveExpression
+ * ShiftExpression - ShiftExpression (<<|>>|>>>) AdditiveExpression
+ *
+ * GRAMMAR:
+ * ShiftExpression :
+ *     AdditiveExpression
+ *     ShiftExpression << AdditiveExpression
+ *     ShiftExpression >> AdditiveExpression
+ *     ShiftExpression >>> AdditiveExpression
+ */
+
+token_t *shift_expression(GPtrArray *input, gsize *position_p) {
+
+    token_t *additive_or_shift_expression_token = additive_expression(input,
+            position_p);
+    return_if_error(additive_or_shift_expression_token);
+
+    // LEFT_RECURSION
+    token_t *operator_token;
+    while (token_match_punctuator_clone(input, position_p,
+                                        PUNCTUATOR_LEFT_SHIFT, &operator_token)
+           || token_match_punctuator_clone(input, position_p,
+                                           PUNCTUATOR_SIGNED_RIGHT_SHIFT,
+                                           &operator_token)
+           || token_match_punctuator_clone(input, position_p,
+                                           PUNCTUATOR_UNSIGNED_RIGHT_SHIFT,
+                                           &operator_token)) {
+
+        token_t *shift_expression_token = token_new_no_data(
+                TOKEN_EXPRESSION_SHIFT_EXPRESSION);
+        token_add_child(shift_expression_token,
+                        additive_or_shift_expression_token);
+        token_add_child(shift_expression_token, operator_token);
+        tokenize_and_add_child_or_free_parent_and_return_error(input,
+                position_p, additive_expression, shift_expression_token)
+        additive_or_shift_expression_token = shift_expression_token;
+    }
+
+    return additive_or_shift_expression_token;
 }
 
 token_t *assignment_expression(GPtrArray *input, gsize *position_p);

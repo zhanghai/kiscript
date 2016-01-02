@@ -56,6 +56,8 @@ token_t *multiplicative_expression(GPtrArray *input, gsize *position_p);
 
 token_t *additive_expression(GPtrArray *input, gsize *position_p);
 
+token_t *shift_expression(GPtrArray *input, gsize *position_p);
+
 token_t *assignment_expression(GPtrArray *input, gsize *position_p);
 
 gboolean expression_is_first(GPtrArray *input, gsize position);
