@@ -8,6 +8,8 @@
 
 #include "parser.h"
 
+gboolean statement_is_first(GPtrArray *input, gsize position);
+
 token_t *statement(GPtrArray *input, gsize *position_p);
 
 gboolean block_is_first(GPtrArray *input, gsize position);

@@ -145,17 +145,16 @@ token_t *function_body(GPtrArray *input, gsize *position_p) {
  *
  * GRAMMAR:
  * SourceElement :
- *     // TODO: statement_is_first()?
- *     // NOTE: FunctionDeclaration is promoted over Statement for
- *     // disambiguation.
  *     FunctionDeclaration
+ *     // NOTE: Statement is moved down for efficiency.
  *     Statement
  */
 
 token_t *source_element(GPtrArray *input, gsize *position_p) {
 
     tokenize_and_return_if_is_first(input, position_p, function_declaration)
+    // NOTE: Statement is moved down for efficiency.
+    tokenize_and_return_if_is_first(input, position_p, statement)
 
-    // TODO: statement_is_first()?
-    return statement(input, position_p);
+    return error_new_syntactic(ERROR_FUNCTION_SOURCE_ELEMENT, *position_p);
 }

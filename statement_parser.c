@@ -54,7 +54,26 @@
  *     DebuggerStatement
  */
 
-// TODO: statement_is_first()?
+gboolean statement_is_first(GPtrArray *input, gsize position) {
+    return block_is_first(input, position)
+           || variable_statement_is_first(input, position)
+           // NONSTANDARD: No EmptyStatement.
+           //|| empty_statement_is_first(input, position)
+           || if_statement_is_first(input, position)
+           || do_while_statement_is_first(input, position)
+           || while_statement_is_first(input, position)
+           || for_statement_is_first(input, position)
+           || continue_statement_is_first(input, position)
+           || break_statement_is_first(input, position)
+           || return_statement_is_first(input, position)
+           || labeled_statement_is_first(input, position)
+           || switch_statement_is_first(input, position)
+           || throw_statement_is_first(input, position)
+           || try_statement_is_first(input, position)
+           || debugger_statement_is_first(input, position)
+           // NOTE: ExpressionStatement is moved down for efficiency.
+           || expression_statement_is_first(input, position);
+}
 
 token_t *statement(GPtrArray *input, gsize *position_p) {
 
