@@ -57,12 +57,12 @@ token_t *primary_expression(GPtrArray *input, gsize *position_p) {
 
     if (token_match_punctuator(input, position_p,
                                PUNCTUATOR_PARENTHESIS_LEFT)) {
-        token_t *expression_token_or_error = expression(input, position_p);
-        return_if_error(expression_token_or_error)
+        token_t *expression_token = expression(input, position_p);
+        return_if_error(expression_token)
         match_punctuator_or_free_and_return_error(input, position_p,
-                PUNCTUATOR_PARENTHESIS_RIGHT, expression_token_or_error,
+                PUNCTUATOR_PARENTHESIS_RIGHT, expression_token,
                 ERROR_EXPRESSION_PRIMARY_EXPRESSION_PARENTHESIS_LEFT)
-        return expression_token_or_error;
+        return expression_token;
     }
 
     return error_new_syntactic(ERROR_EXPRESSION_PRIMARY_EXPRESSION,
@@ -534,6 +534,8 @@ token_t *new_expression(GPtrArray *input, gsize *position_p) {
  *     CallableExpression
  */
 
+DEFINE_DELEGATED_TOKEN_IS_FIRST(left_hand_side_expression, callable_expression)
+
 token_t *left_hand_side_expression(GPtrArray *input, gsize *position_p) {
     return callable_expression(input, position_p);
 }
@@ -550,6 +552,8 @@ token_t *left_hand_side_expression(GPtrArray *input, gsize *position_p) {
  *     LeftHandSideExpression ++
  *     LeftHandSideExpression --
  */
+
+DEFINE_DELEGATED_TOKEN_IS_FIRST(postfix_expression, left_hand_side_expression)
 
 token_t *postfix_expression(GPtrArray *input, gsize *position_p) {
 
@@ -593,6 +597,20 @@ token_t *postfix_expression(GPtrArray *input, gsize *position_p) {
  *     ~ UnaryExpression
  *     ! UnaryExpression
  */
+
+gboolean unary_expression_is_first(GPtrArray *input, gsize position) {
+    return postfix_expression_is_first(input, position)
+           || token_is_first_keyword(input, position, KEYWORD_DELETE)
+           || token_is_first_keyword(input, position, KEYWORD_VOID)
+           || token_is_first_keyword(input, position, KEYWORD_TYPEOF)
+           || token_is_first_punctuator(input, position, PUNCTUATOR_INCREMENT)
+           || token_is_first_punctuator(input, position, PUNCTUATOR_DECREMENT)
+           || token_is_first_punctuator(input, position, PUNCTUATOR_PLUS)
+           || token_is_first_punctuator(input, position, PUNCTUATOR_MINUS)
+           || token_is_first_punctuator(input, position, PUNCTUATOR_TILDE)
+           || token_is_first_punctuator(input, position,
+                                        PUNCTUATOR_EXCLAMATION);
+}
 
 token_t *unary_expression(GPtrArray *input, gsize *position_p) {
 
@@ -642,6 +660,8 @@ token_t *unary_expression(GPtrArray *input, gsize *position_p) {
  *     MultiplicativeExpression % UnaryExpression
  */
 
+DEFINE_DELEGATED_TOKEN_IS_FIRST(multiplicative_expression, postfix_expression)
+
 token_t *multiplicative_expression(GPtrArray *input, gsize *position_p) {
 
     token_t *unary_or_multiplicative_expression_token = unary_expression(input,
@@ -684,6 +704,8 @@ token_t *multiplicative_expression(GPtrArray *input, gsize *position_p) {
  *     AdditiveExpression - MultiplicativeExpression
  */
 
+DEFINE_DELEGATED_TOKEN_IS_FIRST(additive_expression, multiplicative_expression)
+
 token_t *additive_expression(GPtrArray *input, gsize *position_p) {
 
     token_t *multiplicative_or_additive_expression_token =
@@ -723,6 +745,8 @@ token_t *additive_expression(GPtrArray *input, gsize *position_p) {
  *     ShiftExpression >> AdditiveExpression
  *     ShiftExpression >>> AdditiveExpression
  */
+
+DEFINE_DELEGATED_TOKEN_IS_FIRST(shift_expression, additive_expression)
 
 token_t *shift_expression(GPtrArray *input, gsize *position_p) {
 
@@ -770,6 +794,8 @@ token_t *shift_expression(GPtrArray *input, gsize *position_p) {
  *     RelationalExpression >= ShiftExpression
  *     RelationalExpression instanceof ShiftExpression
  */
+
+DEFINE_DELEGATED_TOKEN_IS_FIRST(relational_expression, shift_expression)
 
 token_t *relational_expression(GPtrArray *input, gsize *position_p) {
 
@@ -821,6 +847,8 @@ token_t *relational_expression(GPtrArray *input, gsize *position_p) {
  *     EqualityExpression !== RelationalExpression
  */
 
+DEFINE_DELEGATED_TOKEN_IS_FIRST(equality_expression, relational_expression)
+
 token_t *equality_expression(GPtrArray *input, gsize *position_p) {
 
     token_t *relational_or_equality_expression_token = relational_expression(
@@ -855,6 +883,8 @@ token_t *equality_expression(GPtrArray *input, gsize *position_p) {
 }
 
 #define DEFINE_SIMPLE_EXPRESSION_TOKEN(name, parent_name, operator, id) \
+    DEFINE_DELEGATED_TOKEN_IS_FIRST(name, parent_name) \
+     \
     token_t *name(GPtrArray *input, gsize *position_p) { \
      \
         token_t *name##_or_##parent_name##_token = parent_name(input, \
@@ -959,6 +989,8 @@ DEFINE_SIMPLE_EXPRESSION_TOKEN(logical_or_expression, logical_and_expression,
  *     LogicalORExpression ? AssignmentExpression : AssignmentExpression
  */
 
+DEFINE_DELEGATED_TOKEN_IS_FIRST(conditional_expression, logical_or_expression)
+
 token_t *conditional_expression(GPtrArray *input, gsize *position_p) {
 
     token_t *logical_or_expression_token = logical_or_expression(input,
@@ -997,6 +1029,8 @@ token_t *conditional_expression(GPtrArray *input, gsize *position_p) {
  *     LeftHandSideExpression (=|*=|/=|%=|+=|-=|<<=|>>=|>>>=|&=|^=||=)
  *             AssignmentExpression
  */
+
+DEFINE_DELEGATED_TOKEN_IS_FIRST(assignment_expression, conditional_expression)
 
 token_t *assignment_expression(GPtrArray *input, gsize *position_p) {
 
@@ -1060,12 +1094,36 @@ token_t *assignment_expression(GPtrArray *input, gsize *position_p) {
     }
 }
 
-gboolean expression_is_first(GPtrArray *input, gsize position) {
-    // TODO
-    return FALSE;
-}
+/*
+ * AST:
+ * Expression = AssignmentExpression
+ * Expression - AssignmentExpression{2,}
+ *
+ * GRAMMAR:
+ * Expression:
+ *     AssignmentExpression (, AssignmentExpression)*
+ */
+
+DEFINE_DELEGATED_TOKEN_IS_FIRST(expression, assignment_expression)
 
 token_t *expression(GPtrArray *input, gsize *position_p) {
-    // TODO
-    return NULL;
+
+    // TODO: Use macro tokenize_or_return_error
+    token_t *assignment_expression_token = assignment_expression(input,
+                                                                 position_p);
+    return_if_error(assignment_expression_token);
+
+    if (token_match_punctuator(input, position_p, PUNCTUATOR_COMMA)) {
+
+        token_t *expression_token = token_new_no_data(
+                TOKEN_EXPRESSION_EXPRESSION);
+        do {
+            tokenize_and_add_child_or_free_parent_and_return_error(input,
+                    position_p, assignment_expression, expression_token)
+        } while (token_match_punctuator(input, position_p, PUNCTUATOR_COMMA));
+        return expression_token;
+
+    } else {
+        return assignment_expression_token;
+    }
 }

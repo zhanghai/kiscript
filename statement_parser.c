@@ -938,7 +938,6 @@ gboolean expression_statement_is_first(GPtrArray *input, gsize position) {
     return !token_is_first_punctuator(input, position,
                                       PUNCTUATOR_CURLY_BRACE_LEFT)
            && !token_is_first_keyword(input, position, KEYWORD_FUNCTION)
-           // TODO: Can we have a reliable expression_is_first()?
            && expression_is_first(input, position);
 }
 

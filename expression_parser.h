@@ -48,31 +48,59 @@ gboolean new_expression_is_first(GPtrArray *input, gsize position);
 
 token_t *new_expression(GPtrArray *input, gsize *position_p);
 
+gboolean left_hand_side_expression_is_first(GPtrArray *input, gsize position);
+
 token_t *left_hand_side_expression(GPtrArray *input, gsize *position_p);
+
+gboolean postfix_expression_is_first(GPtrArray *input, gsize position);
 
 token_t *postfix_expression(GPtrArray *input, gsize *position_p);
 
+gboolean multiplicative_expression_is_first(GPtrArray *input, gsize position);
+
 token_t *multiplicative_expression(GPtrArray *input, gsize *position_p);
+
+gboolean additive_expression_is_first(GPtrArray *input, gsize position);
 
 token_t *additive_expression(GPtrArray *input, gsize *position_p);
 
+gboolean shift_expression_is_first(GPtrArray *input, gsize position);
+
 token_t *shift_expression(GPtrArray *input, gsize *position_p);
+
+gboolean relational_expression_is_first(GPtrArray *input, gsize position);
 
 token_t *relational_expression(GPtrArray *input, gsize *position_p);
 
+gboolean equality_expression_is_first(GPtrArray *input, gsize position);
+
 token_t *equality_expression(GPtrArray *input, gsize *position_p);
+
+gboolean bitwise_and_expression_is_first(GPtrArray *input, gsize position);
 
 token_t *bitwise_and_expression(GPtrArray *input, gsize *position_p);
 
+gboolean bitwise_xor_expression_is_first(GPtrArray *input, gsize position);
+
 token_t *bitwise_xor_expression(GPtrArray *input, gsize *position_p);
+
+gboolean bitwise_or_expression_is_first(GPtrArray *input, gsize position);
 
 token_t *bitwise_or_expression(GPtrArray *input, gsize *position_p);
 
+gboolean logical_and_expression_is_first(GPtrArray *input, gsize position);
+
 token_t *logical_and_expression(GPtrArray *input, gsize *position_p);
+
+gboolean logical_or_expression_is_first(GPtrArray *input, gsize position);
 
 token_t *logical_or_expression(GPtrArray *input, gsize *position_p);
 
+gboolean conditional_expression_is_first(GPtrArray *input, gsize position);
+
 token_t *conditional_expression(GPtrArray *input, gsize *position_p);
+
+gboolean assignment_expression_is_first(GPtrArray *input, gsize position);
 
 token_t *assignment_expression(GPtrArray *input, gsize *position_p);
 

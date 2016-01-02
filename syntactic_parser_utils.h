@@ -130,4 +130,9 @@ gboolean token_match_punctuator_clone(GPtrArray *input, gsize *position_p,
         return error_new_syntactic((error_id), *(position_p)); \
     }
 
+#define DEFINE_DELEGATED_TOKEN_IS_FIRST(name, delegate_name) \
+    gboolean name##_is_first(GPtrArray *input, gsize position) { \
+        return delegate_name##_is_first(input, position); \
+    }
+
 #endif //KISCRIPT_SYNTACTIC_PARSER_UTILS_H
