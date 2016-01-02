@@ -33,10 +33,7 @@
  *     ThrowStatement
  *     TryStatement
  *     DebuggerStatement
- *     // Moved down for ambiguity.
- *     // TODO: Is such moving down necessary, can we have a reliable
- *     // expression_is_first()? If so, remember to also modify the order in AST
- *     // and code arrangement.
+ *     // NOTE: ExpressionStatement is moved down for efficiency.
  *     ExpressionStatement
  * STANDARD:
  * Statement :
@@ -77,7 +74,7 @@ token_t *statement(GPtrArray *input, gsize *position_p) {
     tokenize_and_return_if_is_first(input, position_p, throw_statement)
     tokenize_and_return_if_is_first(input, position_p, try_statement)
     tokenize_and_return_if_is_first(input, position_p, debugger_statement)
-    // TODO: Is expression_is_first() reliable?
+    // NOTE: ExpressionStatement is moved down for efficiency.
     tokenize_and_return_if_is_first(input, position_p, expression_statement)
 
     return error_new_syntactic(ERROR_STATEMENT_STATEMENT_STATEMENT,
