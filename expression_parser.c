@@ -754,6 +754,58 @@ token_t *shift_expression(GPtrArray *input, gsize *position_p) {
     return additive_or_shift_expression_token;
 }
 
+/*
+ * AST:
+ * RelationalExpression = ShiftExpression
+ * RelationalExpression - RelationalExpression (<|>|<=|>=|instanceof)
+ *         ShiftExpression
+ *
+ * GRAMMAR:
+ * RelationalExpression :
+ *     ShiftExpression
+ *     RelationalExpression < ShiftExpression
+ *     RelationalExpression > ShiftExpression
+ *     RelationalExpression <= ShiftExpression
+ *     RelationalExpression >= ShiftExpression
+ *     RelationalExpression instanceof ShiftExpression
+ */
+
+token_t *relational_expression(GPtrArray *input, gsize *position_p) {
+
+    token_t *shift_or_relational_expression_token = shift_expression(input,
+            position_p);
+    return_if_error(shift_or_relational_expression_token);
+
+    // LEFT_RECURSION
+    token_t *operator_token;
+    while (token_match_punctuator_clone(input, position_p,
+                                        PUNCTUATOR_ANGLE_BRACKET_LEFT,
+                                        &operator_token)
+           || token_match_punctuator_clone(input, position_p,
+                                           PUNCTUATOR_ANGLE_BRACKET_RIGHT,
+                                           &operator_token)
+           || token_match_punctuator_clone(input, position_p,
+                                           PUNCTUATOR_LESS_THAN_OR_EQUAL,
+                                           &operator_token)
+           || token_match_punctuator_clone(input, position_p,
+                                           PUNCTUATOR_GREATER_THAN_OR_EQUAL,
+                                           &operator_token)
+           || token_match_keyword_clone(input, position_p, KEYWORD_INSTANCEOF,
+                                        &operator_token)) {
+
+        token_t *relational_expression_token = token_new_no_data(
+                TOKEN_EXPRESSION_RELATIONAL_EXPRESSION);
+        token_add_child(relational_expression_token,
+                        shift_or_relational_expression_token);
+        token_add_child(relational_expression_token, operator_token);
+        tokenize_and_add_child_or_free_parent_and_return_error(input,
+                position_p, shift_expression, relational_expression_token)
+        shift_or_relational_expression_token = relational_expression_token;
+    }
+
+    return shift_or_relational_expression_token;
+}
+
 token_t *assignment_expression(GPtrArray *input, gsize *position_p);
 
 gboolean expression_is_first(GPtrArray *input, gsize position) {
