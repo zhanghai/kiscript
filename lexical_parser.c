@@ -33,9 +33,8 @@ static gboolean lexical_parse_is_token_ignored(token_t *token) {
 
 GPtrArray *lexical_parse(gchar *input, token_t **error_p) {
     GPtrArray *token_list = token_list_new();
-    token_t *token;
     while (*input) {
-        token = lexical_token(&input);
+        token_t *token = lexical_token(&input);
         if (error_is_error(token)) {
             token_list_free(&token_list);
             *error_p = token;
