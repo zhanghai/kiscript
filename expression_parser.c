@@ -823,8 +823,8 @@ token_t *relational_expression(GPtrArray *input, gsize *position_p) {
 
 token_t *equality_expression(GPtrArray *input, gsize *position_p) {
 
-    token_t *relational_or_equality_expression_token = shift_expression(input,
-            position_p);
+    token_t *relational_or_equality_expression_token = relational_expression(
+            input, position_p);
     return_if_error(relational_or_equality_expression_token);
 
     // LEFT_RECURSION
@@ -867,8 +867,8 @@ token_t *equality_expression(GPtrArray *input, gsize *position_p) {
 
 token_t *bitwise_and_expression(GPtrArray *input, gsize *position_p) {
 
-    token_t *equality_or_bitwise_and_expression_token = shift_expression(input,
-            position_p);
+    token_t *equality_or_bitwise_and_expression_token = equality_expression(
+            input, position_p);
     return_if_error(equality_or_bitwise_and_expression_token);
 
     // LEFT_RECURSION
@@ -918,6 +918,39 @@ token_t *bitwise_xor_expression(GPtrArray *input, gsize *position_p) {
     }
 
     return bitwise_and_or_bitwise_xor_expression_token;
+}
+
+/*
+ * AST:
+ * BitwiseORExpression = BitwiseXORExpression
+ * BitwiseORExpression - BitwiseORExpression BitwiseXORExpression
+ *
+ * GRAMMAR:
+ * BitwiseORExpression :
+ *     BitwiseXORExpression
+ *     BitwiseORExpression | BitwiseXORExpression
+ */
+
+token_t *bitwise_or_expression(GPtrArray *input, gsize *position_p) {
+
+    token_t *bitwise_xor_or_bitwise_or_expression_token =
+            bitwise_xor_expression(input, position_p);
+    return_if_error(bitwise_xor_or_bitwise_or_expression_token);
+
+    // LEFT_RECURSION
+    while (token_match_punctuator(input, position_p, PUNCTUATOR_VERTICAL_BAR)) {
+
+        token_t *bitwise_or_expression_token = token_new_no_data(
+                TOKEN_EXPRESSION_BITWISE_OR_EXPRESSION);
+        token_add_child(bitwise_or_expression_token,
+                        bitwise_xor_or_bitwise_or_expression_token);
+        tokenize_and_add_child_or_free_parent_and_return_error(input,
+                position_p, bitwise_xor_expression, bitwise_or_expression_token)
+        bitwise_xor_or_bitwise_or_expression_token =
+                bitwise_or_expression_token;
+    }
+
+    return bitwise_xor_or_bitwise_or_expression_token;
 }
 
 token_t *assignment_expression(GPtrArray *input, gsize *position_p);
