@@ -774,8 +774,8 @@ static gdouble *number_new_parse(gchar *input, gchar *input_end) {
     gdouble *value_p = number_new(g_ascii_strtod(text, NULL));
     g_free(text);
     if (errno) {
-        // TODO: Handle overflow/underflow.
-        errno = 0;
+        // TODO: Does the library overflow/underflow handling comply with
+        // standard?
     }
     return value_p;
 }
@@ -786,7 +786,8 @@ static gdouble *number_new_parse_integer(gchar *input, gchar *input_end,
     gdouble *value_p = number_new(g_ascii_strtoll(text, NULL, base));
     g_free(text);
     if (errno) {
-        // TODO: Handle overflow/underflow.
+        // TODO: Does the library overflow/underflow handling comply with
+        // standard?
         errno = 0;
     }
     return value_p;
