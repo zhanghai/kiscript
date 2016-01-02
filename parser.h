@@ -279,7 +279,4 @@ DECLARE_TOKEN_GET_ID_FUNC(error)
 
 DECLARE_TOKEN_IS_TOKEN_WITH_ID_FUNC(error)
 
-
-void normalize_input(gchar **input_p);
-
 #endif //KISCRIPT_PARSER_H

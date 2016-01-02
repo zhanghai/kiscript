@@ -12,6 +12,18 @@
 
 // NOTE: All text arrays are sorted reversely for matching longer text first.
 
+gboolean lexical_parse_normalize_input(gchar **input_p) {
+    gchar *normalized_input = g_utf8_normalize(*input_p, -1,
+                                               G_NORMALIZE_DEFAULT);
+    if (normalized_input) {
+        g_free(*input_p);
+        *input_p = normalized_input;
+        return TRUE;
+    } else {
+        return FALSE;
+    }
+}
+
 static gboolean lexical_parse_is_token_ignored(token_t *token) {
     return token->id == TOKEN_LEXICAL_WHITE_SPACE
            || token->id == TOKEN_LEXICAL_LINE_TERMINATOR
@@ -19,11 +31,11 @@ static gboolean lexical_parse_is_token_ignored(token_t *token) {
            || token->id == TOKEN_LEXICAL_MULTI_LINE_COMMENT;
 }
 
-GPtrArray *lexical_parse(gchar **input_p, token_t **error_p) {
+GPtrArray *lexical_parse(gchar *input, token_t **error_p) {
     GPtrArray *token_list = token_list_new();
     token_t *token;
-    while (**input_p) {
-        token = lexical_token(input_p);
+    while (*input) {
+        token = lexical_token(&input);
         if (error_is_error(token)) {
             token_list_free(&token_list);
             *error_p = token;

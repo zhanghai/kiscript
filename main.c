@@ -11,10 +11,14 @@
 
 int main() {
 
-    char *input = "0x1234567890abcdefABCDEF \tabc\vfor";
+    char *input = g_strdup("0x1234567890abcdefABCDEF \tabc\vfor");
+
+    if (!lexical_parse_normalize_input(&input)) {
+        return EXIT_FAILURE;
+    }
 
     token_t *error = NULL;
-    GPtrArray *token_list = lexical_parse(&input, &error);
+    GPtrArray *token_list = lexical_parse(input, &error);
     if (error) {
         return EXIT_FAILURE;
     }
@@ -24,6 +28,6 @@ int main() {
         return EXIT_FAILURE;
     }
 
-    printf("Hello, World!\n");
+    printf("Hello, KiScript!\n");
     return EXIT_SUCCESS;
 }

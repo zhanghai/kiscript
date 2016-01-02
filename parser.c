@@ -178,11 +178,3 @@ DEFINE_TOKEN_IS_TOKEN_FUNC(error, TOKEN_ERROR)
 DEFINE_TOKEN_GET_ID_FUNC(error)
 
 DEFINE_TOKEN_IS_TOKEN_WITH_ID_FUNC(error)
-
-
-void normalize_input(gchar **input_p) {
-
-    *input_p = g_utf8_normalize(*input_p, -1, G_NORMALIZE_DEFAULT);
-
-    // TODO: Error!
-}
