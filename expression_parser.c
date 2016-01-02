@@ -39,16 +39,19 @@ gboolean primary_expression_is_first(GPtrArray *input, gsize position) {
 
 token_t *primary_expression(GPtrArray *input, gsize *position_p) {
 
-    token_t *token = token_get_or_null(input, *position_p);
-    if (token) {
-        if (keyword_is_keyword_with_id(token, KEYWORD_THIS)
-            || token->id == TOKEN_LEXICAL_IDENTIFIER
-            || token->id == TOKEN_LEXICAL_NULL_LITERAL
-            || token->id == TOKEN_LEXICAL_BOOLEAN_LITERAL
-            || token->id == TOKEN_LEXICAL_NUMERIC_LITERAL
-            || token->id == TOKEN_LEXICAL_STRING_LITERAL) {
-            return token_clone(token);
-        }
+    token_t *token;
+    if (token_match_keyword_clone(input, position_p, KEYWORD_THIS, &token)
+        || token_match_id_clone(input, position_p, TOKEN_LEXICAL_IDENTIFIER,
+                                &token)
+        || token_match_id_clone(input, position_p, TOKEN_LEXICAL_NULL_LITERAL,
+                                &token)
+        || token_match_id_clone(input, position_p,
+                                TOKEN_LEXICAL_BOOLEAN_LITERAL, &token)
+        || token_match_id_clone(input, position_p,
+                                TOKEN_LEXICAL_NUMERIC_LITERAL, &token)
+        || token_match_id_clone(input, position_p, TOKEN_LEXICAL_STRING_LITERAL,
+                                &token)) {
+        return token;
     }
 
     tokenize_and_return_if_is_first(input, position_p, array_literal)
