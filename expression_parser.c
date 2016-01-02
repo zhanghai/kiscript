@@ -57,8 +57,9 @@ token_t *primary_expression(GPtrArray *input, gsize *position_p) {
 
     if (token_match_punctuator(input, position_p,
                                PUNCTUATOR_PARENTHESIS_LEFT)) {
-        token_t *expression_token = expression(input, position_p);
-        return_if_error(expression_token)
+        token_t *expression_token;
+        tokenize_or_return_error(input, position_p, expression,
+                                 expression_token)
         match_punctuator_or_free_and_return_error(input, position_p,
                 PUNCTUATOR_PARENTHESIS_RIGHT, expression_token,
                 ERROR_EXPRESSION_PRIMARY_EXPRESSION_PARENTHESIS_LEFT)
@@ -399,9 +400,10 @@ gboolean callable_expression_is_first(GPtrArray *input, gsize position) {
 
 token_t *callable_expression(GPtrArray *input, gsize *position_p) {
 
-    token_t *callable_expression_token =
-            non_left_recursive_callable_expression(input, position_p);
-    return_if_error(callable_expression_token);
+    token_t *callable_expression_token;
+    tokenize_or_return_error(input, position_p,
+                             non_left_recursive_callable_expression,
+                             callable_expression_token)
 
     // LEFT_RECURSION: lookahead with the power of recursive-descent parsing.
     while (TRUE) {
@@ -557,9 +559,9 @@ DEFINE_DELEGATED_TOKEN_IS_FIRST(postfix_expression, left_hand_side_expression)
 
 token_t *postfix_expression(GPtrArray *input, gsize *position_p) {
 
-    token_t *left_hand_side_expression_token = left_hand_side_expression(input,
-            position_p);
-    return_if_error(left_hand_side_expression_token);
+    token_t *left_hand_side_expression_token;
+    tokenize_or_return_error(input, position_p, left_hand_side_expression,
+                             left_hand_side_expression_token)
 
     token_t *operator_token;
     if (token_match_punctuator_clone(input, position_p, PUNCTUATOR_INCREMENT,
@@ -664,9 +666,9 @@ DEFINE_DELEGATED_TOKEN_IS_FIRST(multiplicative_expression, postfix_expression)
 
 token_t *multiplicative_expression(GPtrArray *input, gsize *position_p) {
 
-    token_t *unary_or_multiplicative_expression_token = unary_expression(input,
-            position_p);
-    return_if_error(unary_or_multiplicative_expression_token);
+    token_t *unary_or_multiplicative_expression_token;
+    tokenize_or_return_error(input, position_p, unary_expression,
+                             unary_or_multiplicative_expression_token)
 
     // LEFT_RECURSION
     token_t *operator_token;
@@ -708,9 +710,9 @@ DEFINE_DELEGATED_TOKEN_IS_FIRST(additive_expression, multiplicative_expression)
 
 token_t *additive_expression(GPtrArray *input, gsize *position_p) {
 
-    token_t *multiplicative_or_additive_expression_token =
-            multiplicative_expression(input, position_p);
-    return_if_error(multiplicative_or_additive_expression_token);
+    token_t *multiplicative_or_additive_expression_token;
+    tokenize_or_return_error(input, position_p, multiplicative_expression,
+                             multiplicative_or_additive_expression_token)
 
     // LEFT_RECURSION
     token_t *operator_token;
@@ -750,9 +752,9 @@ DEFINE_DELEGATED_TOKEN_IS_FIRST(shift_expression, additive_expression)
 
 token_t *shift_expression(GPtrArray *input, gsize *position_p) {
 
-    token_t *additive_or_shift_expression_token = additive_expression(input,
-            position_p);
-    return_if_error(additive_or_shift_expression_token);
+    token_t *additive_or_shift_expression_token;
+    tokenize_or_return_error(input, position_p, additive_expression,
+                             additive_or_shift_expression_token)
 
     // LEFT_RECURSION
     token_t *operator_token;
@@ -799,9 +801,9 @@ DEFINE_DELEGATED_TOKEN_IS_FIRST(relational_expression, shift_expression)
 
 token_t *relational_expression(GPtrArray *input, gsize *position_p) {
 
-    token_t *shift_or_relational_expression_token = shift_expression(input,
-            position_p);
-    return_if_error(shift_or_relational_expression_token);
+    token_t *shift_or_relational_expression_token;
+    tokenize_or_return_error(input, position_p, shift_expression,
+                             shift_or_relational_expression_token)
 
     // LEFT_RECURSION
     token_t *operator_token;
@@ -851,9 +853,9 @@ DEFINE_DELEGATED_TOKEN_IS_FIRST(equality_expression, relational_expression)
 
 token_t *equality_expression(GPtrArray *input, gsize *position_p) {
 
-    token_t *relational_or_equality_expression_token = relational_expression(
-            input, position_p);
-    return_if_error(relational_or_equality_expression_token);
+    token_t *relational_or_equality_expression_token;
+    tokenize_or_return_error(input, position_p, relational_expression,
+                             relational_or_equality_expression_token)
 
     // LEFT_RECURSION
     token_t *operator_token;
@@ -887,19 +889,19 @@ token_t *equality_expression(GPtrArray *input, gsize *position_p) {
      \
     token_t *name(GPtrArray *input, gsize *position_p) { \
      \
-        token_t *name##_or_##parent_name##_token = parent_name(input, \
-                position_p); \
-        return_if_error(name##_or_##parent_name##_token); \
+        token_t *parent_name##_or_##name##_token; \
+        tokenize_or_return_error(input, position_p, parent_name, \
+                parent_name##_or_##name##_token) \
          \
         while (token_match_punctuator(input, position_p, (operator))) { \
             token_t *name##_token = token_new_no_data((id)); \
-            token_add_child(name##_token, name##_or_##parent_name##_token); \
+            token_add_child(name##_token, parent_name##_or_##name##_token); \
             tokenize_and_add_child_or_free_parent_and_return_error(input, \
                     position_p, (parent_name), name##_token) \
-             name##_or_##parent_name##_token = name##_token; \
+            parent_name##_or_##name##_token = name##_token; \
         } \
          \
-        return name##_or_##parent_name##_token; \
+        return parent_name##_or_##name##_token; \
     }
 
 /*
@@ -993,9 +995,9 @@ DEFINE_DELEGATED_TOKEN_IS_FIRST(conditional_expression, logical_or_expression)
 
 token_t *conditional_expression(GPtrArray *input, gsize *position_p) {
 
-    token_t *logical_or_expression_token = logical_or_expression(input,
-                                                                 position_p);
-    return_if_error(logical_or_expression_token);
+    token_t *logical_or_expression_token;
+    tokenize_or_return_error(input, position_p, logical_or_expression,
+                             logical_or_expression_token)
 
     if (token_match_punctuator(input, position_p, PUNCTUATOR_QUESTION_MARK)) {
 
@@ -1034,9 +1036,9 @@ DEFINE_DELEGATED_TOKEN_IS_FIRST(assignment_expression, conditional_expression)
 
 token_t *assignment_expression(GPtrArray *input, gsize *position_p) {
 
-    token_t *conditional_expression_token = conditional_expression(input,
-                                                                   position_p);
-    return_if_error(conditional_expression_token);
+    token_t *conditional_expression_token;
+    tokenize_or_return_error(input, position_p, conditional_expression,
+                             conditional_expression_token)
 
     token_t *operator_token;
     if (token_match_punctuator_clone(input, position_p, PUNCTUATOR_EQUALS_SIGN,
@@ -1108,10 +1110,9 @@ DEFINE_DELEGATED_TOKEN_IS_FIRST(expression, assignment_expression)
 
 token_t *expression(GPtrArray *input, gsize *position_p) {
 
-    // TODO: Use macro tokenize_or_return_error
-    token_t *assignment_expression_token = assignment_expression(input,
-                                                                 position_p);
-    return_if_error(assignment_expression_token);
+    token_t *assignment_expression_token;
+    tokenize_or_return_error(input, position_p, assignment_expression,
+                             assignment_expression_token)
 
     if (token_match_punctuator(input, position_p, PUNCTUATOR_COMMA)) {
 
