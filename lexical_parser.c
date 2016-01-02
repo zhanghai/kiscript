@@ -668,8 +668,7 @@ static char *PUNCTUATORS[] = {
 };
 
 gboolean punctuator_is_first(gchar *input) {
-    return text_array_is_first(input, FUTURE_RESERVED_WORDS,
-                               G_N_ELEMENTS(FUTURE_RESERVED_WORDS));
+    return text_array_is_first(input, PUNCTUATORS, G_N_ELEMENTS(PUNCTUATORS));
 }
 
 static DEFINE_PRIMITIVE_NEW_FUNC(punctuator_id)
