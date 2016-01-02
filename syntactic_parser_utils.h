@@ -76,17 +76,21 @@ gboolean token_match_punctuator_clone(GPtrArray *input, gsize *position_p,
 #define tokenize_and_add_child_or_free_parent_and_return_error(input, \
         position_p, tokenize_func, parent_token) \
     { \
-        token_t *child_token_or_error = tokenize_func((input), (position_p)); \
-        return_and_free_if_error(child_token_or_error, parent_token) \
-        token_add_child(parent_token, child_token_or_error); \
+        token_t *child_token; \
+        tokenize_or_free_and_return_error((input), (position_p), \
+                                          (tokenize_func), child_token, \
+                                          (parent_token)) \
+        token_add_child((parent_token), child_token); \
     }
 
 #define tokenize_and_add_child_or_free_grand_parent_and_return_error(input, \
         position_p, tokenize_func, parent_token, grand_parent_token) \
     { \
-        token_t *child_token_or_error = tokenize_func((input), (position_p)); \
-        return_and_free_if_error(child_token_or_error, grand_parent_token) \
-        token_add_child(parent_token, child_token_or_error); \
+        token_t *child_token; \
+        tokenize_or_free_and_return_error((input), (position_p), \
+                                          (tokenize_func), child_token, \
+                                          (grand_parent_token)) \
+        token_add_child((parent_token), child_token); \
     }
 
 #define match_token_id_clone_and_return_if_is_first(input, position_p, \

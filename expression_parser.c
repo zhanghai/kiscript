@@ -341,8 +341,9 @@ token_t *property_name(GPtrArray *input, gsize *position_p) {
 
     if (token_match_punctuator(input, position_p,
                                PUNCTUATOR_SQUARE_BRACKET_LEFT)) {
-        token_t *assignment_expression_token = assignment_expression(input,
-                position_p);
+        token_t *assignment_expression_token;
+        tokenize_or_return_error(input, position_p, assignment_expression,
+                                 assignment_expression_token);
         match_punctuator_or_free_and_return_error(input, position_p,
                 PUNCTUATOR_SQUARE_BRACKET_RIGHT, assignment_expression_token,
                 ERROR_EXPRESSION_PROPERTY_NAME_SQUARE_BRACKET_RIGHT)
