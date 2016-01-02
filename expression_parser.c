@@ -761,6 +761,7 @@ token_t *shift_expression(GPtrArray *input, gsize *position_p) {
  *         ShiftExpression
  *
  * GRAMMAR:
+ * // NONSTANDARD: No in.
  * RelationalExpression :
  *     ShiftExpression
  *     RelationalExpression < ShiftExpression
@@ -804,6 +805,53 @@ token_t *relational_expression(GPtrArray *input, gsize *position_p) {
     }
 
     return shift_or_relational_expression_token;
+}
+
+/*
+ * AST:
+ * EqualityExpression = RelationalExpression
+ * EqualityExpression - EqualityExpression (==|!=|===|!==) RelationalExpression
+ *
+ * GRAMMAR:
+ * EqualityExpression :
+ *     RelationalExpression
+ *     EqualityExpression == RelationalExpression
+ *     EqualityExpression != RelationalExpression
+ *     EqualityExpression === RelationalExpression
+ *     EqualityExpression !== RelationalExpression
+ */
+
+token_t *equality_expression(GPtrArray *input, gsize *position_p) {
+
+    token_t *relational_or_equality_expression_token = shift_expression(input,
+            position_p);
+    return_if_error(relational_or_equality_expression_token);
+
+    // LEFT_RECURSION
+    token_t *operator_token;
+    while (token_match_punctuator_clone(input, position_p, PUNCTUATOR_EQUALS,
+                                        &operator_token)
+           || token_match_punctuator_clone(input, position_p,
+                                           PUNCTUATOR_DOES_NOT_EQUAL,
+                                           &operator_token)
+           || token_match_punctuator_clone(input, position_p,
+                                           PUNCTUATOR_STRICT_EQUALS,
+                                           &operator_token)
+           || token_match_punctuator_clone(input, position_p,
+                                           PUNCTUATOR_STRICT_DOES_NOT_EQUAL,
+                                           &operator_token)) {
+
+        token_t *equality_expression_token = token_new_no_data(
+                TOKEN_EXPRESSION_EQUALITY_EXPRESSION);
+        token_add_child(equality_expression_token,
+                        relational_or_equality_expression_token);
+        token_add_child(equality_expression_token, operator_token);
+        tokenize_and_add_child_or_free_parent_and_return_error(input,
+                position_p, relational_expression, equality_expression_token)
+        relational_or_equality_expression_token = equality_expression_token;
+    }
+
+    return relational_or_equality_expression_token;
 }
 
 token_t *assignment_expression(GPtrArray *input, gsize *position_p);
