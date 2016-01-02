@@ -63,7 +63,14 @@ gboolean token_match_punctuator_clone(GPtrArray *input, gsize *position_p,
 #define tokenize_or_return_error(input, position_p, tokenize_func, token) \
     { \
         token = tokenize_func((input), (position_p)); \
-        return_if_error(token) \
+        return_if_error((token)) \
+    }
+
+#define tokenize_or_free_and_return_error(input, position_p, tokenize_func, \
+        token, token_to_free) \
+    { \
+        token = tokenize_func((input), (position_p)); \
+        return_and_free_if_error((token), (token_to_free)) \
     }
 
 #define tokenize_and_add_child_or_free_parent_and_return_error(input, \

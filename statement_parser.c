@@ -418,10 +418,11 @@ token_t *for_statement(GPtrArray *input, gsize *position_p) {
 
     if (token_match_keyword(input, position_p, KEYWORD_VAR)) {
 
-        token_t *first_variable_declaration_token = variable_declaration(input,
-                position_p);
-        return_and_free_if_error(first_variable_declaration_token,
-                                 for_statement_token);
+        token_t *first_variable_declaration_token;
+        tokenize_or_free_and_return_error(input, position_p,
+                                          variable_declaration,
+                                          first_variable_declaration_token,
+                                          for_statement_token);
 
         if (token_is_first_punctuator(input, *position_p, PUNCTUATOR_COMMA)) {
 
