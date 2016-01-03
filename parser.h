@@ -118,6 +118,15 @@ DECLARE_FREE_FUNCS_WITH_TYPE(token_list, GPtrArray);
         return token->id == (token_id); \
     }
 
+#define DECLARE_TOKEN_GET_VALUE_FUNC(token_name, token_value_type) \
+    token_value_type *token_name##_get_value(token_t *token);
+
+#define DEFINE_TOKEN_GET_VALUE_FUNC(token_name, token_value_type) \
+    token_value_type *token_name##_get_value(token_t *token) { \
+            g_assert(token_name##_is_##token_name(token)); \
+            return (token_value_type *) token->data; \
+    }
+
 #define DECLARE_TOKEN_GET_ID_FUNC(token_name) \
     token_name##_id_t *token_name##_get_id(token_t *token);
 

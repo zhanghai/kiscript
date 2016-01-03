@@ -8,7 +8,6 @@
 #include <errno.h>
 
 #include "lexical_parser_utils.h"
-#include "parser.h"
 
 // NOTE: All text arrays are sorted reversely for matching longer text first.
 
@@ -273,6 +272,10 @@ token_t *multi_line_comment(gchar **input_p) {
     return error_new_lexical(ERROR_LEXICAL_MULTI_LINE_COMMENT, *input_p);
 }
 
+DEFINE_TOKEN_IS_TOKEN_FUNC(multi_line_comment, TOKEN_LEXICAL_MULTI_LINE_COMMENT)
+
+DEFINE_TOKEN_GET_VALUE_FUNC(multi_line_comment, GString)
+
 /*
  * SingleLineComment ::
  *     // SingleLineCommentChar*
@@ -308,6 +311,11 @@ token_t *single_line_comment(gchar **input_p) {
     g_string_free(buffer, TRUE);
     return error_new_lexical(ERROR_LEXICAL_SINGLE_LINE_COMMENT, *input_p);
 }
+
+DEFINE_TOKEN_IS_TOKEN_FUNC(single_line_comment,
+                           TOKEN_LEXICAL_SINGLE_LINE_COMMENT)
+
+DEFINE_TOKEN_GET_VALUE_FUNC(single_line_comment, GString)
 
 /*
  * UnicodeLetter ::
@@ -504,6 +512,10 @@ token_t *identifier(gchar **input_p) {
     g_string_free(string, TRUE);
     return error_new_lexical(ERROR_LEXICAL_IDENTIFIER, *input_p);
 }
+
+DEFINE_TOKEN_IS_TOKEN_FUNC(identifier, TOKEN_LEXICAL_IDENTIFIER)
+
+DEFINE_TOKEN_GET_VALUE_FUNC(identifier, GString)
 
 static char *KEYWORDS[] = {
         "with",
@@ -742,6 +754,10 @@ token_t *boolean_literal(gchar **input_p) {
 
     return error_new_lexical(ERROR_LEXICAL_BOOLEAN_LITERAL, *input_p);
 }
+
+DEFINE_TOKEN_IS_TOKEN_FUNC(boolean_literal, TOKEN_LEXICAL_BOOLEAN_LITERAL)
+
+DEFINE_TOKEN_GET_VALUE_FUNC(boolean_literal, gboolean)
 
 /*
  * NONSTANDARD:
@@ -1012,10 +1028,9 @@ token_t *numeric_literal(gchar **input_p) {
             ERROR_LEXICAL_NUMERIC_LITERAL_FOLLOWED_BY_IDENTIFIER, *input_p);
 }
 
-gdouble *numeric_literal_get_value(token_t *token) {
-    g_assert(token->id == TOKEN_LEXICAL_NUMERIC_LITERAL);
-    return (gdouble *) token->data;
-}
+DEFINE_TOKEN_IS_TOKEN_FUNC(numeric_literal, TOKEN_LEXICAL_NUMERIC_LITERAL)
+
+DEFINE_TOKEN_GET_VALUE_FUNC(numeric_literal, gdouble)
 
 /*
  * StringLiteral ::
@@ -1165,3 +1180,7 @@ token_t *string_literal(gchar **input_p) {
 
     return error_new_lexical(ERROR_LEXICAL_STRING_LITERAL, *input_p);
 }
+
+DEFINE_TOKEN_IS_TOKEN_FUNC(string_literal, TOKEN_LEXICAL_STRING_LITERAL)
+
+DEFINE_TOKEN_GET_VALUE_FUNC(string_literal, GString)

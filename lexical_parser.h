@@ -26,9 +26,17 @@ gboolean multi_line_comment_is_first(gchar *input);
 
 token_t *multi_line_comment(gchar **input_p);
 
+DECLARE_TOKEN_IS_TOKEN_FUNC(multi_line_comment)
+
+DECLARE_TOKEN_GET_VALUE_FUNC(multi_line_comment, GString)
+
 gboolean single_line_comment_is_first(gchar *input);
 
 token_t *single_line_comment(gchar **input_p);
+
+DECLARE_TOKEN_IS_TOKEN_FUNC(single_line_comment)
+
+DECLARE_TOKEN_GET_VALUE_FUNC(single_line_comment, GString)
 
 gboolean token_is_first(gchar *input);
 
@@ -39,6 +47,10 @@ gboolean identifier_part_is_first(gchar *input);
 gboolean identifier_is_first(gchar *input);
 
 token_t *identifier(gchar **input_p);
+
+DECLARE_TOKEN_IS_TOKEN_FUNC(identifier)
+
+DECLARE_TOKEN_GET_VALUE_FUNC(identifier, GString)
 
 typedef enum {
     KEYWORD_WITH,
@@ -179,17 +191,27 @@ gboolean boolean_literal_is_first(gchar *input);
 
 token_t *boolean_literal(gchar **input_p);
 
+DECLARE_TOKEN_IS_TOKEN_FUNC(boolean_literal)
+
+DECLARE_TOKEN_GET_VALUE_FUNC(boolean_literal, gboolean)
+
 gboolean numeric_literal_is_first(gchar *input);
 
 token_t *numeric_literal(gchar **input_p);
 
-gdouble *numeric_literal_get_value(token_t *token);
+DECLARE_TOKEN_IS_TOKEN_FUNC(numeric_literal)
+
+DECLARE_TOKEN_GET_VALUE_FUNC(numeric_literal, gdouble)
+
+gboolean unicode_escape_sequence_match_save_value(gchar **input_p,
+                                                  GString *buffer);
 
 gboolean string_literal_is_first(gchar *input);
 
 token_t *string_literal(gchar **input_p);
 
-gboolean unicode_escape_sequence_match_save_value(gchar **input_p,
-                                                  GString *buffer);
+DECLARE_TOKEN_IS_TOKEN_FUNC(string_literal)
+
+DECLARE_TOKEN_GET_VALUE_FUNC(string_literal, GString)
 
 #endif //KISCRIPT_LEXICAL_PARSER_H
