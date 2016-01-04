@@ -8,6 +8,7 @@
 #include "function_parser.h"
 #include "lexical_parser.h"
 #include "syntactic_parser_utils.h"
+#include "parser.h"
 
 /*
  * AST:
@@ -438,6 +439,8 @@ token_t *callable_expression(GPtrArray *input, gsize *position_p) {
 
         } else if (argument_list_is_first(input, *position_p)) {
 
+            // NOTE: CallExpression is shared with the implementation of
+            // NewExpression. See the comment there.
             token_t *call_expression_token = token_new_no_data(
                     TOKEN_EXPRESSION_CALL_EXPRESSION);
             token_add_child(call_expression_token, callable_expression_token);
@@ -514,18 +517,20 @@ token_t *new_expression(GPtrArray *input, gsize *position_p) {
     match_keyword_or_return_error(input, position_p, KEYWORD_NEW,
                                   ERROR_EXPRESSION_NEW_EXPRESSION_NEW)
 
-    token_t *new_expression_token = token_new_no_data(
-            TOKEN_EXPRESSION_NEW_EXPRESSION);
+    token_t *callable_expression_token;
+    tokenize_or_return_error(input, position_p, callable_expression,
+                             callable_expression_token)
 
-    tokenize_and_add_child_or_free_parent_and_return_error(input, position_p,
-                                                           callable_expression,
-                                                           new_expression_token)
+    // HACK: CallExpression is CallableExpression, so we cannot disambiguate the
+    // matching between CallExpression and NewExpression. We simply take the
+    // must-be CallExpression and turn it into a NewExpression here.
+    if (callable_expression_token->id != TOKEN_EXPRESSION_CALL_EXPRESSION) {
+        return error_new_syntactic(
+                ERROR_EXPRESSION_NEW_EXPRESSION_CALL_EXPRESSION, *position_p);
+    }
+    callable_expression_token->id = TOKEN_EXPRESSION_NEW_EXPRESSION;
 
-    tokenize_and_add_child_or_free_parent_and_return_error(input, position_p,
-                                                           argument_list,
-                                                           new_expression_token)
-
-    return new_expression_token;
+    return callable_expression_token;
 }
 
 /*
