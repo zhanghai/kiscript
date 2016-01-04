@@ -666,7 +666,7 @@ token_t *unary_expression(GPtrArray *input, gsize *position_p) {
  *     MultiplicativeExpression % UnaryExpression
  */
 
-DEFINE_DELEGATED_TOKEN_IS_FIRST(multiplicative_expression, postfix_expression)
+DEFINE_DELEGATED_TOKEN_IS_FIRST(multiplicative_expression, unary_expression)
 
 token_t *multiplicative_expression(GPtrArray *input, gsize *position_p) {
 
