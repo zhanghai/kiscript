@@ -54,7 +54,7 @@ int main() {
     }
 
     GString *program_string = token_to_string(program_or_error);
-    printf(program_string->str);
+    printf("%s", program_string->str);
     g_string_free(program_string, TRUE);
     token_free(&program_or_error);
 
