@@ -185,7 +185,7 @@ static GString *token_to_string_with_indentation(token_t *token,
     }
 
     if (token == NULL) {
-        g_string_append(result, "(null)");
+        g_string_append(result, "(null)\n");
         return result;
     }
 
