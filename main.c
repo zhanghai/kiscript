@@ -14,7 +14,7 @@ int main() {
 
     char *input = NULL;
     size_t input_length = 0;
-    getline(&input, &input_length, stdin);
+    getdelim(&input, &input_length, EOF, stdin);
     if (errno) {
         perror("getline");
         g_free(input);
