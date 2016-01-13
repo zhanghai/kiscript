@@ -360,8 +360,9 @@ token_t *property_name(GPtrArray *input, gsize *position_p) {
 /*
  * AST:
  * CallableExpression = PrimaryExpression|FunctionExpression|NewExpression
- *     |PropertyAccessor|CallExpression
- * PropertyAccessor - CallableExpression (Identifier|Expression)
+ *     |DotPropertyAccessor|SquareBracketPropertyAccessor|CallExpression
+ * DotPropertyAccessor - CallableExpression Identifier
+ * SquareBracketPropertyAccessor - CallableExpression Expression
  * CallExpression - CallableExpression ArgumentList
  *
  * GRAMMAR:
@@ -371,10 +372,12 @@ token_t *property_name(GPtrArray *input, gsize *position_p) {
  *     NewExpression
  * CallableExpression :
  *     NonLeftRecursiveCallableExpression
- *     PropertyAccessor
+ *     DotPropertyAccessor
+ *     SquareBracketPropertyAccessor
  *     CallExpression
- * PropertyAccessor :
+ * DotPropertyAccessor :
  *     CallableExpression . Identifier
+ * SquareBracketPropertyAccessor :
  *     CallableExpression [ Expression ]
  * CallExpression :
  *     CallableExpression ArgumentList
@@ -416,25 +419,25 @@ token_t *callable_expression(GPtrArray *input, gsize *position_p) {
         if (token_match_punctuator(input, position_p, PUNCTUATOR_DOT)) {
 
             token_t *property_accessor_token = token_new_no_data(
-                    TOKEN_EXPRESSION_PROPERTY_ACCESSOR);
+                    TOKEN_EXPRESSION_DOT_PROPERTY_ACCESSOR);
             token_add_child(property_accessor_token, callable_expression_token);
             match_token_id_clone_and_add_child_or_free_parent_and_return_error(
                     input, position_p, TOKEN_LEXICAL_IDENTIFIER,
                     property_accessor_token,
-                    ERROR_EXPRESSION_PROPERTY_ACCESSOR_IDENTIFIER)
+                    ERROR_EXPRESSION_DOT_PROPERTY_ACCESSOR_IDENTIFIER)
             callable_expression_token = property_accessor_token;
 
         } else if (token_match_punctuator(input, position_p,
                                    PUNCTUATOR_SQUARE_BRACKET_LEFT)) {
 
             token_t *property_accessor_token = token_new_no_data(
-                    TOKEN_EXPRESSION_PROPERTY_ACCESSOR);
+                    TOKEN_EXPRESSION_SQUARE_BRACKET_PROPERTY_ACCESSOR);
             token_add_child(property_accessor_token, callable_expression_token);
             tokenize_and_add_child_or_free_parent_and_return_error(input,
                     position_p, expression, property_accessor_token);
             match_punctuator_or_free_and_return_error(input, position_p,
                     PUNCTUATOR_SQUARE_BRACKET_RIGHT, property_accessor_token,
-                    ERROR_EXPRESSION_PROPERTY_ACCESSOR_SQUARE_BRACKET_RIGHT)
+         ERROR_EXPRESSION_SQUARE_BRACKET_PROPERTY_ACCESSOR_SQUARE_BRACKET_RIGHT)
             callable_expression_token = property_accessor_token;
 
         } else if (argument_list_is_first(input, *position_p)) {
