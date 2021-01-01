@@ -22,6 +22,10 @@ GString *g_string_append_g_string(GString *string, GString *string2);
 
 GString *g_string_clone(GString *string);
 
+guint g_string_hash_func(gconstpointer key);
+
+gboolean g_string_equal_func(gconstpointer a, gconstpointer b);
+
 gboolean g_ptr_array_is_empty(GPtrArray *array);
 
 gboolean g_ptr_array_in_range(GPtrArray *array, gsize position);

@@ -13,6 +13,14 @@ GString *g_string_clone(GString *string) {
     return g_string_new_len(string->str, string->len);
 }
 
+guint g_string_hash_func(gconstpointer key) {
+    return g_string_hash(key);
+}
+
+gboolean g_string_equal_func(gconstpointer a, gconstpointer b) {
+    return g_string_equal(a, b);
+}
+
 gboolean g_ptr_array_is_empty(GPtrArray *array) {
     return array->len == 0;
 }
